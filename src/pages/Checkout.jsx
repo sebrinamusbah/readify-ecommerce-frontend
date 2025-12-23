@@ -1,7 +1,15 @@
+import { useSelector } from "react-redux";
+import api from "../api/axios";
+
 function Checkout() {
-  const handleCheckout = () => {
-    // later → backend creates Stripe session
-    window.location.href = "https://stripe.com";
+  const cartItems = useSelector((state) => state.cart.items);
+
+  const handleCheckout = async () => {
+    const res = await api.post("/checkout", {
+      items: cartItems,
+    });
+
+    window.location.href = res.data.url; // Stripe redirect
   };
 
   return (
@@ -10,7 +18,7 @@ function Checkout() {
 
       <button
         onClick={handleCheckout}
-        className="bg-purple-600 text-white px-6 py-2 rounded"
+        className="bg-green-500 text-white px-6 py-2 rounded"
       >
         Pay with Stripe
       </button>
