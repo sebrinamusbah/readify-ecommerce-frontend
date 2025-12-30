@@ -76,3 +76,16 @@ main {
 .p-4 {
     padding: 2rem;
 }
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+}
+
+
+/* ... rest of your existing styles ... */
