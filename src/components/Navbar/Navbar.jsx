@@ -27,7 +27,7 @@ const Navbar = () => {
         {/* Logo - Links to Home */}
         <div className="navbar-logo">
           <Link to="/" onClick={closeMobileMenu}>
-            📚 BookStore
+            📚 Readify Book Club
           </Link>
         </div>
 
