@@ -2,14 +2,10 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
-import Home from "./pages/Home/Home"; // Import the actual Home component
+import Home from "./pages/Home/Home";
+import Categories from "./pages/Categories/Categories"; // Import actual Categories component
 
 // Keep other temporary components for now
-const Categories = () => (
-  <div style={{ padding: "20px" }}>
-    <h1>Categories Page</h1>
-  </div>
-);
 const Cart = () => (
   <div style={{ padding: "20px" }}>
     <h1>Cart Page</h1>
@@ -37,9 +33,9 @@ function App() {
       <Navbar />
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />{" "}
-          {/* Use actual Home component */}
-          <Route path="/categories" element={<Categories />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/categories" element={<Categories />} />{" "}
+          {/* Use actual Categories */}
           <Route path="/book/:id" element={<BookDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
