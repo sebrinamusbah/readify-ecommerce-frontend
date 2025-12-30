@@ -460,6 +460,12 @@
         height: 35px;
         font-size: 1.3rem;
     }
+    .user-avatar {
+        visibility: hidden;
+    }
+    .mobile-dropdown-menu {
+        top: 100px;
+    }
 }
 
 @media (max-width: 576px) {
@@ -482,7 +488,7 @@
         margin-right: 10px;
     }
     .mobile-dropdown-menu {
-        top: 60px;
+        top: 100px;
     }
     .mobile-user-avatar .user-avatar {
         width: 32px;
