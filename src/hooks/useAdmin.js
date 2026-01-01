@@ -1,4 +1,4 @@
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useCallback } from "react";
 
 export const useAdmin = () => {
@@ -20,48 +20,78 @@ export const useAdmin = () => {
         return true;
     }, [user, isAdmin]);
 
-    const fetchUsers = useCallback(async() => {
+    const fetchAllUsers = useCallback(async() => {
         checkAdminAccess();
-        return await getAllUsers();
+        try {
+            return await getAllUsers();
+        } catch (error) {
+            console.error("Failed to fetch users:", error);
+            throw error;
+        }
     }, [checkAdminAccess, getAllUsers]);
 
     const updateUser = useCallback(
         async(userId, userData) => {
             checkAdminAccess();
-            return await adminUpdateUser(userId, userData);
+            try {
+                return await adminUpdateUser(userId, userData);
+            } catch (error) {
+                console.error("Failed to update user:", error);
+                throw error;
+            }
         }, [checkAdminAccess, adminUpdateUser]
     );
 
     const createBook = useCallback(
         async(bookData) => {
             checkAdminAccess();
-            return await adminCreateBook(bookData);
+            try {
+                return await adminCreateBook(bookData);
+            } catch (error) {
+                console.error("Failed to create book:", error);
+                throw error;
+            }
         }, [checkAdminAccess, adminCreateBook]
     );
 
     const updateBook = useCallback(
         async(bookId, bookData) => {
             checkAdminAccess();
-            return await adminUpdateBook(bookId, bookData);
+            try {
+                return await adminUpdateBook(bookId, bookData);
+            } catch (error) {
+                console.error("Failed to update book:", error);
+                throw error;
+            }
         }, [checkAdminAccess, adminUpdateBook]
     );
 
     const deleteBook = useCallback(
         async(bookId) => {
             checkAdminAccess();
-            return await adminDeleteBook(bookId);
+            try {
+                return await adminDeleteBook(bookId);
+            } catch (error) {
+                console.error("Failed to delete book:", error);
+                throw error;
+            }
         }, [checkAdminAccess, adminDeleteBook]
     );
 
     const fetchStats = useCallback(async() => {
         checkAdminAccess();
-        return await getAdminStats();
+        try {
+            return await getAdminStats();
+        } catch (error) {
+            console.error("Failed to fetch admin stats:", error);
+            throw error;
+        }
     }, [checkAdminAccess, getAdminStats]);
 
     return {
         isAdmin: isAdmin(),
         checkAdminAccess,
-        fetchUsers,
+        fetchAllUsers,
         updateUser,
         createBook,
         updateBook,
