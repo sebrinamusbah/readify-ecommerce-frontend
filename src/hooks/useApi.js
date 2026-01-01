@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { api } from "../contexts/AuthContext";
+import { api } from "../context/AuthContext";
 
 export const useApi = (initialState = null) => {
     const [data, setData] = useState(initialState);

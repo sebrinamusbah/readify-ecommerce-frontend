@@ -1,6 +1,6 @@
 // Export all hooks from one place
 export { useAuth }
-from "../contexts/AuthContext";
+from "../context/AuthContext.jsx";
 export { useAdmin }
 from "./useAdmin";
 export { useBooks }
