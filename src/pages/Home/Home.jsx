@@ -155,20 +155,20 @@ const Home = () => {
     );
   }
 
-  // Your EXACT original JSX - unchanged!
+  // Your EXACT original JSX with added stats section
   return (
     <div className="home-page">
-      {/* HERO BANNER SECTION - Add stats from backend */}
+      {/* HERO BANNER SECTION */}
       <section className="hero-banner">
         <div className="hero-content">
           <h1 className="hero-title">Discover Your Next Favorite Book</h1>
           <p className="hero-subtitle">
             {books.length > 0
-              ? `Real data from Render backend (${books.length} books)`
+              ? `Connected to Render backend with ${books.length} books`
               : "New arrivals & exclusive promotions"}
           </p>
 
-          {/* Show stats from backend if available */}
+          {/* Stats from backend */}
           <div className="hero-stats">
             <div className="stat">
               <span className="stat-number">
@@ -202,7 +202,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* SEARCH BAR SECTION - Same as before */}
+      {/* SEARCH BAR SECTION */}
       <section className="search-section">
         <div className="container">
           <form className="search-form" onSubmit={handleSearch}>
@@ -228,7 +228,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* FEATURED CATEGORIES SECTION - Uses real/fake data */}
+      {/* FEATURED CATEGORIES SECTION */}
       <section className="featured-categories">
         <div className="container">
           <div className="section-header">
@@ -262,7 +262,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* POPULAR BOOKS SECTION - Uses real/fake data */}
+      {/* POPULAR BOOKS SECTION */}
       <section className="popular-books">
         <div className="container">
           <div className="section-header">
@@ -315,7 +315,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CALL TO ACTION SECTION - Same as before */}
+      {/* CALL TO ACTION SECTION */}
       <section className="cta-section">
         <div className="container">
           <div className="cta-content">
