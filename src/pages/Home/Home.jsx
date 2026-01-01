@@ -21,7 +21,7 @@ const Home = () => {
       author: "F. Scott Fitzgerald",
       price: 12.99,
       rating: 4.5,
-      image: "https://via.placeholder.com/150x200/3498db/ffffff?text=Book1",
+      image: "https://via.placeholder.com/150x200/3498db/ffffff",
     },
     {
       id: 2,
@@ -29,7 +29,7 @@ const Home = () => {
       author: "Harper Lee",
       price: 14.99,
       rating: 4.8,
-      image: "https://via.placeholder.com/150x200/2ecc71/ffffff?text=Book2",
+      image: "https://via.placeholder.com/150x200/3498db/ffffff",
     },
     {
       id: 3,
@@ -37,7 +37,7 @@ const Home = () => {
       author: "George Orwell",
       price: 10.99,
       rating: 4.7,
-      image: "https://via.placeholder.com/150x200/9b59b6/ffffff?text=Book3",
+      image: "https://via.placeholder.com/150x200/3498db/ffffff",
     },
     {
       id: 4,
