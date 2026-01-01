@@ -4,13 +4,15 @@ import axios from "axios";
 const AuthContext = createContext(null);
 
 // Create axios instance with base URL
+// FIX: Use Vite's environment variables
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
+// Rest of the file remains exactly the same...
 // Add request interceptor to include token
 api.interceptors.request.use(
   (config) => {
@@ -60,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     if (token && storedUser) {
       try {
         // Since you might not have a verify endpoint, we can check by fetching user profile
-        const response = await api.get("/api/user/profile"); // Adjust based on your user routes
+        const response = await api.get("/api/user/profile");
 
         if (response.data) {
           setUser(JSON.parse(storedUser));
@@ -153,6 +155,7 @@ export const AuthProvider = ({ children }) => {
       const { token, user: registeredUser } = response.data;
 
       // Store token and user data
+      localStorage.removeItem("token");
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(registeredUser));
 
