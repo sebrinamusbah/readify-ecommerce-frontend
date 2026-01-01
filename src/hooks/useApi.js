@@ -1,31 +1,35 @@
 import { useState, useCallback } from "react";
-import { api } from "./AuthContext";
+import { api } from "../contexts/AuthContext";
 
-export const useApi = () => {
+export const useApi = (initialState = null) => {
+    const [data, setData] = useState(initialState);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const request = useCallback(async(method, url, data = null, config = {}) => {
-        setLoading(true);
-        setError(null);
+    const request = useCallback(
+        async(method, url, requestData = null, config = {}) => {
+            setLoading(true);
+            setError(null);
 
-        try {
-            const response = await api.request({
-                method,
-                url,
-                data,
-                ...config,
-            });
-            return response.data;
-        } catch (err) {
-            const errorMessage =
-                err.response ? .data ? .message || err.message || "Something went wrong";
-            setError(errorMessage);
-            throw new Error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+            try {
+                const response = await api.request({
+                    method,
+                    url,
+                    data: requestData,
+                    ...config,
+                });
+                setData(response.data);
+                return response.data;
+            } catch (err) {
+                const errorMessage =
+                    err.response ? .data ? .message || err.message || "Something went wrong";
+                setError(errorMessage);
+                throw new Error(errorMessage);
+            } finally {
+                setLoading(false);
+            }
+        }, []
+    );
 
     const get = useCallback(
         (url, config = {}) => request("GET", url, null, config), [request]
@@ -44,8 +48,10 @@ export const useApi = () => {
     );
 
     const clearError = useCallback(() => setError(null), []);
+    const clearData = useCallback(() => setData(initialState), [initialState]);
 
     return {
+        data,
         loading,
         error,
         get,
@@ -54,5 +60,7 @@ export const useApi = () => {
         patch,
         delete: del,
         clearError,
+        clearData,
+        setData,
     };
 };
