@@ -1,6 +1,6 @@
-// hooks/index.js
+// Export all hooks from one place
 export { useAuth }
-from "./AuthContext";
+from "../contexts/AuthContext";
 export { useAdmin }
 from "./useAdmin";
 export { useBooks }
@@ -11,5 +11,7 @@ export { useOrders }
 from "./useOrders";
 export { useCategories }
 from "./useCategories";
+export { useProfile }
+from "./useProfile";
 export { useApi }
 from "./useApi";
