@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
+import authService from "../services/authService";
 
 const AuthContext = createContext(null);
 
@@ -13,108 +14,88 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Function to check and set user from localStorage
-  const checkUser = () => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      setUser(null);
-    }
-  };
-
+  // Check if user is logged in on initial load
   useEffect(() => {
-    // Check if user is logged in from localStorage on initial load
-    checkUser();
-
-    // Listen for storage events (login/logout from other tabs/windows)
-    const handleStorageChange = (e) => {
-      if (e.key === "user") {
-        checkUser();
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          // Optionally validate token with backend
+          const currentUser = authService.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            // Token might be invalid, clear it
+            authService.logout();
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        authService.logout();
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Custom event for login/logout within same tab
-    const handleAuthChange = () => {
-      checkUser();
-    };
-
-    // Add event listeners
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("user-auth-change", handleAuthChange);
-
-    setLoading(false);
-
-    // Cleanup event listeners
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("user-auth-change", handleAuthChange);
-    };
+    checkAuth();
   }, []);
 
   const login = async (email, password) => {
-    // Simulate API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Mock admin credentials
-        if (email === "admin@bookstore.com" && password === "admin123") {
-          const adminUser = {
-            id: 1,
-            email: "admin@bookstore.com",
-            name: "Admin User",
-            role: "admin",
-            avatar: "👑",
-          };
-          setUser(adminUser);
-          localStorage.setItem("user", JSON.stringify(adminUser));
-          // Dispatch custom event for same tab
-          window.dispatchEvent(new Event("user-auth-change"));
-          resolve(adminUser);
-        } else if (email === "test@example.com" && password === "password123") {
-          const normalUser = {
-            id: 2,
-            email: "test@example.com",
-            name: "Test User",
-            role: "user",
-            avatar: "👤",
-          };
-          setUser(normalUser);
-          localStorage.setItem("user", JSON.stringify(normalUser));
-          window.dispatchEvent(new Event("user-auth-change"));
-          resolve(normalUser);
-        } else {
-          reject(new Error("Invalid credentials"));
-        }
-      }, 1000);
-    });
+    setError(null);
+    try {
+      const data = await authService.login(email, password);
+      setUser(data.user);
+      return data.user;
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed");
+      throw err;
+    }
+  };
+
+  const register = async (userData) => {
+    setError(null);
+    try {
+      const data = await authService.register(userData);
+      setUser(data.user);
+      return data.user;
+    } catch (err) {
+      setError(err.response?.data?.message || "Registration failed");
+      throw err;
+    }
   };
 
   const logout = () => {
+    authService.logout();
     setUser(null);
-    localStorage.removeItem("user");
-    // Dispatch custom event for same tab
-    window.dispatchEvent(new Event("user-auth-change"));
+  };
+
+  const updateUser = async (userData) => {
+    try {
+      const data = await authService.updateProfile(userData);
+      setUser(data.user);
+      return data.user;
+    } catch (err) {
+      setError(err.response?.data?.message || "Update failed");
+      throw err;
+    }
   };
 
   const isAdmin = () => {
     return user?.role === "admin";
   };
 
-  const updateUser = (updatedUserData) => {
-    const updatedUser = { ...user, ...updatedUserData };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    window.dispatchEvent(new Event("user-auth-change"));
-  };
-
   const value = {
     user,
     loading,
+    error,
     login,
+    register,
     logout,
-    isAdmin,
     updateUser,
+    isAdmin,
+    setError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
