@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useCart } from "../hooks/useCart";
+import { useAuth } from "../context/AuthContext";
 import "./BookDetails.css";
 
 const BookDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { addToCart, loading: cartLoading } = useCart();
 
   // Sample book data - In real app, fetch from API using id
   const bookData = {
@@ -72,6 +76,7 @@ const BookDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Quantity handlers
   const increaseQuantity = () => {
@@ -94,13 +99,79 @@ const BookDetails = () => {
   };
 
   // Add to cart handler
-  const handleAddToCart = () => {
-    alert(`Added ${quantity} copy(ies) of "${bookData.title}" to cart`);
-    // In real app: dispatch to cart context/API
+  const handleAddToCart = async () => {
+    if (!user) {
+      alert("Please login to add items to your cart");
+      navigate("/login");
+      return;
+    }
+
+    setIsAddingToCart(true);
+
+    try {
+      const cartItem = {
+        book: bookData,
+        bookId: bookData.id,
+        quantity: quantity,
+        price: bookData.price,
+      };
+
+      const result = await addToCart(cartItem);
+
+      if (result.success) {
+        alert(`Added ${quantity} copy(ies) of "${bookData.title}" to cart`);
+      } else {
+        alert(`Failed to add to cart: ${result.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      alert("Error adding to cart. Please try again.");
+      console.error("Add to cart error:", error);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  // Buy Now handler
+  const handleBuyNow = async () => {
+    if (!user) {
+      alert("Please login to proceed to checkout");
+      navigate("/login");
+      return;
+    }
+
+    setIsAddingToCart(true);
+
+    try {
+      const cartItem = {
+        book: bookData,
+        bookId: bookData.id,
+        quantity: quantity,
+        price: bookData.price,
+      };
+
+      const result = await addToCart(cartItem);
+
+      if (result.success) {
+        navigate("/cart");
+      } else {
+        alert(`Failed to add to cart: ${result.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      alert("Error adding to cart. Please try again.");
+      console.error("Add to cart error:", error);
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   // Add to wishlist handler
   const handleAddToWishlist = () => {
+    if (!user) {
+      alert("Please login to add items to your wishlist");
+      navigate("/login");
+      return;
+    }
+
     setIsInWishlist(!isInWishlist);
     alert(
       isInWishlist
@@ -179,6 +250,7 @@ const BookDetails = () => {
                   isInWishlist ? "active" : ""
                 }`}
                 onClick={handleAddToWishlist}
+                disabled={cartLoading}
               >
                 {isInWishlist ? "❤️ In Wishlist" : "🤍 Add to Wishlist"}
               </button>
@@ -309,19 +381,22 @@ const BookDetails = () => {
                 <button
                   className="btn add-to-cart-btn"
                   onClick={handleAddToCart}
-                  disabled={bookData.stock === 0}
+                  disabled={bookData.stock === 0 || isAddingToCart}
                 >
-                  🛒 Add to Cart (${(bookData.price * quantity).toFixed(2)})
+                  {isAddingToCart ? (
+                    "Adding..."
+                  ) : (
+                    <>
+                      🛒 Add to Cart (${(bookData.price * quantity).toFixed(2)})
+                    </>
+                  )}
                 </button>
                 <button
                   className="btn buy-now-btn"
-                  onClick={() => {
-                    handleAddToCart();
-                    navigate("/cart");
-                  }}
-                  disabled={bookData.stock === 0}
+                  onClick={handleBuyNow}
+                  disabled={bookData.stock === 0 || isAddingToCart}
                 >
-                  ⚡ Buy Now
+                  {isAddingToCart ? "Processing..." : "⚡ Buy Now"}
                 </button>
               </div>
             </div>

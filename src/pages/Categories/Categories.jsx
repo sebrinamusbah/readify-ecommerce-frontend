@@ -1,138 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useCategories } from "../hooks/useCategories";
+import { useBooks } from "../hooks/useBooks";
 import "./Categories.css";
 
 const Categories = () => {
   const [searchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category") || "all";
 
-  // Categories data
-  const categories = [
-    { id: 1, name: "All", count: 620, slug: "all" },
-    { id: 2, name: "Fiction", count: 150, slug: "fiction" },
-    { id: 3, name: "Non-Fiction", count: 120, slug: "non-fiction" },
-    { id: 4, name: "Science", count: 85, slug: "science" },
-    { id: 5, name: "Biography", count: 65, slug: "biography" },
-    { id: 6, name: "Technology", count: 90, slug: "technology" },
-    { id: 7, name: "Children", count: 110, slug: "children" },
-    { id: 8, name: "Romance", count: 75, slug: "romance" },
-    { id: 9, name: "Mystery", count: 60, slug: "mystery" },
-    { id: 10, name: "Fantasy", count: 95, slug: "fantasy" },
-    { id: 11, name: "History", count: 70, slug: "history" },
-    { id: 12, name: "Business", count: 55, slug: "business" },
-  ];
+  // Use custom hooks
+  const {
+    categories: backendCategories,
+    loading: categoriesLoading,
+    error: categoriesError,
+    fetchCategories,
+  } = useCategories();
 
-  // Sample books data
-  const allBooks = [
-    {
-      id: 1,
-      title: "The Great Gatsby",
-      author: "F. Scott Fitzgerald",
-      price: 12.99,
-      rating: 4.5,
-      category: "fiction",
-      image: "https://via.placeholder.com/150x200/3498db/ffffff?text=Book1",
-    },
-    {
-      id: 2,
-      title: "A Brief History of Time",
-      author: "Stephen Hawking",
-      price: 15.99,
-      rating: 4.8,
-      category: "science",
-      image: "https://via.placeholder.com/150x200/2ecc71/ffffff?text=Book2",
-    },
-    {
-      id: 3,
-      title: "1984",
-      author: "George Orwell",
-      price: 10.99,
-      rating: 4.7,
-      category: "fiction",
-      image: "https://via.placeholder.com/150x200/9b59b6/ffffff?text=Book3",
-    },
-    {
-      id: 4,
-      title: "Steve Jobs",
-      author: "Walter Isaacson",
-      price: 18.99,
-      rating: 4.6,
-      category: "biography",
-      image: "https://via.placeholder.com/150x200/e74c3c/ffffff?text=Book4",
-    },
-    {
-      id: 5,
-      title: "The Hobbit",
-      author: "J.R.R. Tolkien",
-      price: 15.99,
-      rating: 4.9,
-      category: "fantasy",
-      image: "https://via.placeholder.com/150x200/f39c12/ffffff?text=Book5",
-    },
-    {
-      id: 6,
-      title: "Atomic Habits",
-      author: "James Clear",
-      price: 16.99,
-      rating: 4.8,
-      category: "non-fiction",
-      image: "https://via.placeholder.com/150x200/1abc9c/ffffff?text=Book6",
-    },
-    {
-      id: 7,
-      title: "The Cat in the Hat",
-      author: "Dr. Seuss",
-      price: 8.99,
-      rating: 4.4,
-      category: "children",
-      image: "https://via.placeholder.com/150x200/3498db/ffffff?text=Book7",
-    },
-    {
-      id: 8,
-      title: "The Lean Startup",
-      author: "Eric Ries",
-      price: 19.99,
-      rating: 4.5,
-      category: "business",
-      image: "https://via.placeholder.com/150x200/2ecc71/ffffff?text=Book8",
-    },
-    {
-      id: 9,
-      title: "Pride and Prejudice",
-      author: "Jane Austen",
-      price: 9.99,
-      rating: 4.6,
-      category: "romance",
-      image: "https://via.placeholder.com/150x200/9b59b6/ffffff?text=Book9",
-    },
-    {
-      id: 10,
-      title: "The Da Vinci Code",
-      author: "Dan Brown",
-      price: 13.99,
-      rating: 4.3,
-      category: "mystery",
-      image: "https://via.placeholder.com/150x200/e74c3c/ffffff?text=Book10",
-    },
-    {
-      id: 11,
-      title: "Sapiens",
-      author: "Yuval Noah Harari",
-      price: 17.99,
-      rating: 4.7,
-      category: "history",
-      image: "https://via.placeholder.com/150x200/f39c12/ffffff?text=Book11",
-    },
-    {
-      id: 12,
-      title: "Clean Code",
-      author: "Robert C. Martin",
-      price: 29.99,
-      rating: 4.9,
-      category: "technology",
-      image: "https://via.placeholder.com/150x200/1abc9c/ffffff?text=Book12",
-    },
-  ];
+  const {
+    books,
+    loading: booksLoading,
+    error: booksError,
+    fetchBooks,
+  } = useBooks();
 
   // State for filters
   const [priceRange, setPriceRange] = useState([0, 100]);
@@ -142,14 +31,68 @@ const Categories = () => {
     selectedCategory === "all" ? "all" : selectedCategory,
   ]);
 
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchCategories();
+    fetchBooks();
+  }, [fetchCategories, fetchBooks]);
+
+  // Transform backend categories for UI
+  const categories = [
+    {
+      id: "all",
+      name: "All",
+      slug: "all",
+      count: books.length || 0,
+    },
+    ...backendCategories.map((category) => {
+      // Count books in this category
+      const bookCount = books.filter(
+        (book) =>
+          book.category?.id === category.id || book.categoryId === category.id
+      ).length;
+
+      return {
+        id: category.id,
+        name: category.name,
+        slug: category.slug || category.name.toLowerCase().replace(/\s+/g, "-"),
+        count: bookCount,
+        description: category.description,
+      };
+    }),
+  ];
+
+  // Helper to get image URL
+  const getBookImageUrl = (imagePath) => {
+    if (!imagePath) {
+      return "https://via.placeholder.com/150x200/cccccc/333333?text=No+Image";
+    }
+
+    if (imagePath.startsWith("http")) {
+      return imagePath;
+    }
+
+    if (imagePath.startsWith("/uploads")) {
+      return `${
+        process.env.REACT_APP_API_URL || "http://localhost:5001"
+      }${imagePath}`;
+    }
+
+    return imagePath;
+  };
+
   // Filter books based on selected category and filters
-  const filteredBooks = allBooks.filter((book) => {
+  const filteredBooks = books.filter((book) => {
     // Category filter
-    if (
-      !selectedCategories.includes("all") &&
-      !selectedCategories.includes(book.category)
-    ) {
-      return false;
+    if (!selectedCategories.includes("all")) {
+      const bookCategorySlug =
+        book.category?.slug ||
+        book.category?.name?.toLowerCase().replace(/\s+/g, "-") ||
+        "unknown";
+
+      if (!selectedCategories.includes(bookCategorySlug)) {
+        return false;
+      }
     }
 
     // Price filter
@@ -157,7 +100,7 @@ const Categories = () => {
       return false;
     }
 
-    // Rating filter
+    // Rating filter (if book has rating)
     if (book.rating < minRating) {
       return false;
     }
@@ -169,14 +112,14 @@ const Categories = () => {
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     switch (sortBy) {
       case "price-low":
-        return a.price - b.price;
+        return (a.price || 0) - (b.price || 0);
       case "price-high":
-        return b.price - a.price;
+        return (b.price || 0) - (a.price || 0);
       case "rating":
-        return b.rating - a.rating;
+        return (b.rating || 0) - (a.rating || 0);
       case "newest":
       default:
-        return b.id - a.id; // Assuming higher ID = newer
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     }
   });
 
@@ -211,6 +154,36 @@ const Categories = () => {
     setSortBy("newest");
   };
 
+  // Loading state
+  const isLoading = categoriesLoading || booksLoading;
+  const error = categoriesError || booksError;
+
+  if (isLoading && books.length === 0) {
+    return (
+      <div className="categories-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading categories and books...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="categories-error">
+        <h2>Error Loading Data</h2>
+        <p>{error}</p>
+        <button
+          onClick={() => {
+            fetchCategories();
+            fetchBooks();
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="categories-page">
       {/* Breadcrumb */}
@@ -226,7 +199,19 @@ const Categories = () => {
           <h1 className="page-title">Browse Books by Category</h1>
           <p className="page-subtitle">
             Discover {filteredBooks.length} books in our collection
+            {backendCategories.length > 0 &&
+              ` across ${backendCategories.length} categories`}
           </p>
+
+          {/* Database Info */}
+          {books.length > 0 && (
+            <div className="database-info">
+              <small>
+                📊 Connected to database: {books.length} books,{" "}
+                {backendCategories.length} categories
+              </small>
+            </div>
+          )}
         </div>
 
         <div className="categories-layout">
@@ -316,7 +301,7 @@ const Categories = () => {
                 </select>
               </div>
               <div className="results-count">
-                Showing {sortedBooks.length} of {allBooks.length} books
+                Showing {sortedBooks.length} of {books.length} books
               </div>
             </div>
 
@@ -331,50 +316,98 @@ const Categories = () => {
               </div>
             ) : (
               <div className="books-grid">
-                {sortedBooks.map((book) => (
-                  <Link
-                    to={`/book/${book.id}`}
-                    key={book.id}
-                    className="book-card"
-                  >
-                    <div className="book-image">
-                      <img src={book.image} alt={book.title} />
-                      <div className="book-category">{book.category}</div>
-                    </div>
-                    <div className="book-info">
-                      <h3 className="book-title">{book.title}</h3>
-                      <p className="book-author">by {book.author}</p>
-                      <div className="book-rating">
-                        {"★".repeat(Math.floor(book.rating))}
-                        {"☆".repeat(5 - Math.floor(book.rating))}
-                        <span className="rating-number">({book.rating})</span>
+                {sortedBooks.map((book) => {
+                  // Get category name
+                  const categoryName = book.category?.name || "Unknown";
+                  const categorySlug =
+                    book.category?.slug ||
+                    book.category?.name?.toLowerCase().replace(/\s+/g, "-") ||
+                    "unknown";
+
+                  return (
+                    <Link
+                      to={`/book/${book.id}`}
+                      key={book.id}
+                      className="book-card"
+                    >
+                      <div className="book-image">
+                        <img
+                          src={getBookImageUrl(
+                            book.imageUrl || book.coverImage
+                          )}
+                          alt={book.title}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://via.placeholder.com/150x200/3498db/ffffff?text=${encodeURIComponent(
+                              book.title?.substring(0, 10) || "Book"
+                            )}`;
+                          }}
+                        />
+                        <div className="book-category">
+                          <Link
+                            to={`/categories?category=${categorySlug}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="category-link"
+                          >
+                            {categoryName}
+                          </Link>
+                        </div>
+                        {book.isFeatured && (
+                          <div className="book-badge">Featured</div>
+                        )}
                       </div>
-                      <div className="book-price">${book.price.toFixed(2)}</div>
-                      <button
-                        className="add-to-cart-btn"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          alert(`Added ${book.title} to cart`);
-                        }}
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </Link>
-                ))}
+                      <div className="book-info">
+                        <h3 className="book-title">{book.title}</h3>
+                        <p className="book-author">
+                          by {book.author || "Unknown Author"}
+                        </p>
+                        <div className="book-rating">
+                          {"★".repeat(Math.floor(book.rating || 0))}
+                          {"☆".repeat(5 - Math.floor(book.rating || 0))}
+                          <span className="rating-number">
+                            {(book.rating || 0).toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="book-price">
+                          ${(book.price || 0).toFixed(2)}
+                        </div>
+                        {book.stock > 0 ? (
+                          <button
+                            className="add-to-cart-btn"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              // You'll implement actual add to cart functionality later
+                              alert(`Added "${book.title}" to cart`);
+                            }}
+                          >
+                            Add to Cart
+                          </button>
+                        ) : (
+                          <button className="out-of-stock-btn" disabled>
+                            Out of Stock
+                          </button>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
 
-            {/* Pagination (Placeholder) */}
+            {/* Pagination - You can implement actual pagination when your API supports it */}
             {sortedBooks.length > 0 && (
               <div className="pagination">
                 <button className="pagination-btn disabled">← Previous</button>
                 <div className="pagination-pages">
                   <button className="page-btn active">1</button>
-                  <button className="page-btn">2</button>
-                  <button className="page-btn">3</button>
-                  <span>...</span>
-                  <button className="page-btn">10</button>
+                  {books.length > 12 && <button className="page-btn">2</button>}
+                  {books.length > 24 && <button className="page-btn">3</button>}
+                  {books.length > 36 && <span>...</span>}
+                  {books.length > 48 && (
+                    <button className="page-btn">
+                      {Math.ceil(books.length / 12)}
+                    </button>
+                  )}
                 </div>
                 <button className="pagination-btn">Next →</button>
               </div>

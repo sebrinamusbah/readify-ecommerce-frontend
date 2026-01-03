@@ -9,7 +9,7 @@ const orderService = {
             const response = await api.get("/orders");
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to fetch orders" };
+            throw error.response ?.data || { error: "Failed to fetch orders" };
         }
     },
 
@@ -22,7 +22,7 @@ const orderService = {
             const response = await api.get(`/orders/${id}`);
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to fetch order" };
+            throw error.response ?.data || { error: "Failed to fetch order" };
         }
     },
 
@@ -35,7 +35,7 @@ const orderService = {
             const response = await api.post("/orders", orderData);
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to create order" };
+            throw error.response ?.data || { error: "Failed to create order" };
         }
     },
 
@@ -49,7 +49,7 @@ const orderService = {
             const response = await api.put(`/orders/${id}/status`, { status });
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to update order status" };
+            throw error.response ?.data || { error: "Failed to update order status" };
         }
     },
 
@@ -62,7 +62,7 @@ const orderService = {
             const response = await api.put(`/orders/${id}/cancel`);
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to cancel order" };
+            throw error.response ?.data || { error: "Failed to cancel order" };
         }
     },
 
@@ -74,7 +74,7 @@ const orderService = {
             const response = await api.get("/orders/history");
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to fetch order history" };
+            throw error.response ?.data || { error: "Failed to fetch order history" };
         }
     },
 };

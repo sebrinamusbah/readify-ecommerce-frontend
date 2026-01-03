@@ -21,14 +21,17 @@ export const useCategories = () => {
         }
     }, []);
 
-    const fetchCategoriesSummary = useCallback(async() => {
+    const getCategoryBySlug = useCallback(async(slug) => {
         try {
-            const result = await categoryService.getCategoriesSummary();
-            if (result.success) {
-                return result.data;
-            }
+            setLoading(true);
+            setError(null);
+            const result = await categoryService.getCategoryBySlug(slug);
+            return result;
         } catch (err) {
-            console.error("Failed to fetch categories summary:", err);
+            setError(err.error || "Failed to fetch category");
+            return { success: false, error: err.error };
+        } finally {
+            setLoading(false);
         }
     }, []);
 
@@ -37,6 +40,6 @@ export const useCategories = () => {
         loading,
         error,
         fetchCategories,
-        fetchCategoriesSummary,
+        getCategoryBySlug,
     };
 };

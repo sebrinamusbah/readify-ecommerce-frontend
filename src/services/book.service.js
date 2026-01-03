@@ -6,7 +6,7 @@ const bookService = {
             const response = await api.get("/books", { params });
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to fetch books" };
+            throw error.response ?.data || { error: "Failed to fetch books" };
         }
     },
 
@@ -15,7 +15,7 @@ const bookService = {
             const response = await api.get("/books/featured");
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to fetch featured books" };
+            throw error.response ?.data || { error: "Failed to fetch featured books" };
         }
     },
 
@@ -26,7 +26,7 @@ const bookService = {
             });
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Search failed" };
+            throw error.response ?.data || { error: "Search failed" };
         }
     },
 };

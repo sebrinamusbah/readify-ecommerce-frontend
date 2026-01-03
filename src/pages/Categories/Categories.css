@@ -506,6 +506,108 @@
 }
 
 
+/* Loading and Error States */
+
+.categories-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+}
+
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.categories-error {
+    text-align: center;
+    padding: 40px;
+    background: #f8d7da;
+    color: #721c24;
+    border-radius: 8px;
+    margin: 20px;
+}
+
+.categories-error button {
+    background: #721c24;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+
+/* Database Info */
+
+.database-info {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #666;
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+
+/* Book Card Updates */
+
+.book-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #e74c3c;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.category-link {
+    color: white;
+    text-decoration: none;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.category-link:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.out-of-stock-btn {
+    background: #95a5a6 !important;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: not-allowed;
+    width: 100%;
+    margin-top: 10px;
+}
+
+
 /* Responsive Design */
 
 @media (max-width: 992px) {

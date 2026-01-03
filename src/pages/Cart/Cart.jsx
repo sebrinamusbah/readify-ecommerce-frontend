@@ -1,115 +1,92 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "../hooks/useCart";
+import { useAuth } from "../context/AuthContext";
 import "./Cart.css";
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const {
+    cartItems,
+    loading,
+    error,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    moveToWishlist,
+    calculateTotals,
+    itemCount,
+  } = useCart();
 
-  // Sample cart items data
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      title: "The Great Gatsby",
-      author: "F. Scott Fitzgerald",
-      price: 12.99,
-      originalPrice: 19.99,
-      quantity: 1,
-      image: "https://via.placeholder.com/100x130/3498db/ffffff?text=Gatsby",
-      category: "Fiction",
-      stock: 15,
-    },
-    {
-      id: 2,
-      title: "A Brief History of Time",
-      author: "Stephen Hawking",
-      price: 15.99,
-      originalPrice: 24.99,
-      quantity: 2,
-      image: "https://via.placeholder.com/100x130/2ecc71/ffffff?text=History",
-      category: "Science",
-      stock: 8,
-    },
-    {
-      id: 3,
-      title: "Atomic Habits",
-      author: "James Clear",
-      price: 16.99,
-      originalPrice: 22.99,
-      quantity: 1,
-      image: "https://via.placeholder.com/100x130/1abc9c/ffffff?text=Habits",
-      category: "Non-Fiction",
-      stock: 20,
-    },
-  ]);
+  const { subtotal, tax, shipping, total } = calculateTotals();
 
-  // Calculate totals
-  const subtotal = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
-  const tax = subtotal * 0.08; // 8% tax
-  const shipping = subtotal > 30 ? 0 : 5.99; // Free shipping over $30
-  const total = subtotal + tax + shipping;
+  // Helper to get image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) {
+      return "https://via.placeholder.com/100x130/cccccc/333333?text=No+Image";
+    }
+
+    if (imagePath.startsWith("http")) {
+      return imagePath;
+    }
+
+    if (imagePath.startsWith("/uploads")) {
+      return `${
+        process.env.REACT_APP_API_URL || "http://localhost:5001"
+      }${imagePath}`;
+    }
+
+    return imagePath;
+  };
 
   // Quantity handlers
-  const increaseQuantity = (id) => {
-    setCartItems(
-      cartItems.map((item) => {
-        if (item.id === id && item.quantity < item.stock) {
-          return { ...item, quantity: item.quantity + 1 };
-        }
-        return item;
-      })
-    );
+  const handleIncreaseQuantity = async (itemId, currentQuantity, stock) => {
+    if (currentQuantity < stock) {
+      await updateQuantity(itemId, currentQuantity + 1);
+    }
   };
 
-  const decreaseQuantity = (id) => {
-    setCartItems(
-      cartItems.map((item) => {
-        if (item.id === id && item.quantity > 1) {
-          return { ...item, quantity: item.quantity - 1 };
-        }
-        return item;
-      })
-    );
+  const handleDecreaseQuantity = async (itemId, currentQuantity) => {
+    if (currentQuantity > 1) {
+      await updateQuantity(itemId, currentQuantity - 1);
+    }
   };
 
-  const updateQuantity = (id, newQuantity) => {
-    const quantity = Math.max(1, Math.min(newQuantity, 100)); // Limit 1-100
-    setCartItems(
-      cartItems.map((item) => {
-        if (item.id === id) {
-          return { ...item, quantity: Math.min(quantity, item.stock) };
-        }
-        return item;
-      })
-    );
+  const handleUpdateQuantity = async (itemId, newQuantity, stock) => {
+    const quantity = Math.max(1, Math.min(newQuantity, stock));
+    await updateQuantity(itemId, quantity);
   };
 
   // Remove item from cart
-  const removeItem = (id) => {
+  const handleRemoveItem = async (itemId, itemTitle) => {
     if (
       window.confirm(
-        "Are you sure you want to remove this item from your cart?"
+        `Are you sure you want to remove "${itemTitle}" from your cart?`
       )
     ) {
-      setCartItems(cartItems.filter((item) => item.id !== id));
+      const result = await removeItem(itemId);
+      if (result.success) {
+        alert(`Removed "${itemTitle}" from cart`);
+      }
     }
   };
 
   // Clear entire cart
-  const clearCart = () => {
+  const handleClearCart = async () => {
     if (window.confirm("Are you sure you want to clear your entire cart?")) {
-      setCartItems([]);
+      const result = await clearCart();
+      if (result.success) {
+        alert("Cart cleared successfully");
+      }
     }
   };
 
   // Move item to wishlist
-  const moveToWishlist = (id) => {
-    const item = cartItems.find((item) => item.id === id);
-    if (item) {
-      alert(`Moved "${item.title}" to your wishlist`);
-      removeItem(id);
+  const handleMoveToWishlist = async (itemId, itemTitle) => {
+    const result = await moveToWishlist(itemId);
+    if (result.success) {
+      alert(`Moved "${itemTitle}" to your wishlist`);
     }
   };
 
@@ -119,9 +96,14 @@ const Cart = () => {
       alert("Your cart is empty. Add some books first!");
       return;
     }
-    alert("Proceeding to checkout...");
-    // In real app: navigate to checkout page
-    // navigate('/checkout');
+
+    if (!user) {
+      alert("Please login to proceed to checkout");
+      navigate("/login");
+      return;
+    }
+
+    navigate("/checkout");
   };
 
   // Continue shopping
@@ -129,14 +111,68 @@ const Cart = () => {
     navigate("/categories");
   };
 
-  // Save cart for later
-  const saveForLater = (id) => {
-    const item = cartItems.find((item) => item.id === id);
-    if (item) {
-      alert(`Saved "${item.title}" for later`);
-      removeItem(id);
-    }
+  // Save cart for later (placeholder - implement later)
+  const saveForLater = (itemId, itemTitle) => {
+    alert(`Saved "${itemTitle}" for later (Feature coming soon)`);
   };
+
+  // Show login required state
+  if (!user) {
+    return (
+      <div className="cart-page">
+        <div className="container">
+          <div className="login-required">
+            <div className="login-icon">🔒</div>
+            <h2>Login Required</h2>
+            <p>Please login to view your cart and checkout</p>
+            <div className="login-actions">
+              <Link to="/login" className="btn btn-primary">
+                Login to Your Account
+              </Link>
+              <Link to="/register" className="btn btn-secondary">
+                Create New Account
+              </Link>
+            </div>
+            <p className="login-note">
+              Don't have an account? Sign up to save your cart and access order
+              history.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading && cartItems.length === 0) {
+    return (
+      <div className="cart-page">
+        <div className="container">
+          <div className="cart-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading your cart...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && cartItems.length === 0) {
+    return (
+      <div className="cart-page">
+        <div className="container">
+          <div className="cart-error">
+            <h2>Error Loading Cart</h2>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()}>
+              Retry Loading Cart
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cart-page">
@@ -145,8 +181,7 @@ const Cart = () => {
         <div className="cart-header">
           <h1 className="cart-title">Your Shopping Cart</h1>
           <p className="cart-subtitle">
-            {cartItems.length} {cartItems.length === 1 ? "item" : "items"} in
-            your cart
+            {itemCount} {itemCount === 1 ? "item" : "items"} in your cart
           </p>
         </div>
 
@@ -157,14 +192,13 @@ const Cart = () => {
             <div className="cart-actions-bar">
               <button
                 className="clear-cart-btn"
-                onClick={clearCart}
-                disabled={cartItems.length === 0}
+                onClick={handleClearCart}
+                disabled={cartItems.length === 0 || loading}
               >
-                🗑️ Clear Cart
+                {loading ? "Clearing..." : "🗑️ Clear Cart"}
               </button>
               <div className="cart-total-items">
-                Total:{" "}
-                <span className="highlight">{cartItems.length} items</span>
+                Total: <span className="highlight">{itemCount} items</span>
               </div>
             </div>
 
@@ -187,120 +221,159 @@ const Cart = () => {
               <>
                 {/* Cart Items List */}
                 <div className="cart-items-list">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="cart-item">
-                      <div className="cart-item-image">
-                        <Link to={`/book/${item.id}`}>
-                          <img src={item.image} alt={item.title} />
-                        </Link>
-                      </div>
+                  {cartItems.map((item) => {
+                    const book = item.book || {};
+                    const stock = book.stock || 10;
+                    const itemTotal = (book.price || 0) * (item.quantity || 1);
 
-                      <div className="cart-item-details">
-                        <div className="item-header">
-                          <Link to={`/book/${item.id}`} className="item-title">
-                            {item.title}
-                          </Link>
-                          <button
-                            className="remove-item-btn"
-                            onClick={() => removeItem(item.id)}
-                            title="Remove item"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        <p className="item-author">by {item.author}</p>
-
-                        <div className="item-category">
-                          Category:
-                          <Link
-                            to={`/categories?category=${item.category.toLowerCase()}`}
-                          >
-                            {item.category}
+                    return (
+                      <div key={item.id} className="cart-item">
+                        <div className="cart-item-image">
+                          <Link to={`/book/${book.id}`}>
+                            <img
+                              src={getImageUrl(
+                                book.imageUrl || book.coverImage
+                              )}
+                              alt={book.title}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = `https://via.placeholder.com/100x130/3498db/ffffff?text=${encodeURIComponent(
+                                  book.title?.substring(0, 10) || "Book"
+                                )}`;
+                              }}
+                            />
                           </Link>
                         </div>
 
-                        <div className="item-stock">
-                          {item.quantity >= item.stock ? (
-                            <span className="stock-warning">
-                              Only {item.stock} left in stock!
-                            </span>
-                          ) : (
-                            <span className="stock-ok">In Stock</span>
-                          )}
-                        </div>
-
-                        <div className="item-actions">
-                          <button
-                            className="action-btn"
-                            onClick={() => saveForLater(item.id)}
-                          >
-                            💾 Save for later
-                          </button>
-                          <button
-                            className="action-btn"
-                            onClick={() => moveToWishlist(item.id)}
-                          >
-                            ❤️ Move to wishlist
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="cart-item-quantity">
-                        <div className="quantity-control">
-                          <button
-                            className="quantity-btn minus"
-                            onClick={() => decreaseQuantity(item.id)}
-                            disabled={item.quantity <= 1}
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            min="1"
-                            max={item.stock}
-                            value={item.quantity}
-                            onChange={(e) =>
-                              updateQuantity(
-                                item.id,
-                                parseInt(e.target.value) || 1
-                              )
-                            }
-                            className="quantity-input"
-                          />
-                          <button
-                            className="quantity-btn plus"
-                            onClick={() => increaseQuantity(item.id)}
-                            disabled={item.quantity >= item.stock}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div className="quantity-limit">Max: {item.stock}</div>
-                      </div>
-
-                      <div className="cart-item-price">
-                        <div className="price-current">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </div>
-                        {item.originalPrice && (
-                          <div className="price-original">
-                            ${(item.originalPrice * item.quantity).toFixed(2)}
+                        <div className="cart-item-details">
+                          <div className="item-header">
+                            <Link
+                              to={`/book/${book.id}`}
+                              className="item-title"
+                            >
+                              {book.title || "Unknown Book"}
+                            </Link>
+                            <button
+                              className="remove-item-btn"
+                              onClick={() =>
+                                handleRemoveItem(item.id, book.title)
+                              }
+                              title="Remove item"
+                              disabled={loading}
+                            >
+                              ✕
+                            </button>
                           </div>
-                        )}
-                        <div className="price-per-unit">
-                          ${item.price.toFixed(2)} each
+
+                          <p className="item-author">
+                            by {book.author || "Unknown Author"}
+                          </p>
+
+                          {book.category && (
+                            <div className="item-category">
+                              Category:
+                              <Link
+                                to={`/categories?category=${
+                                  book.category.slug ||
+                                  book.category.name?.toLowerCase()
+                                }`}
+                              >
+                                {book.category.name}
+                              </Link>
+                            </div>
+                          )}
+
+                          <div className="item-stock">
+                            {item.quantity >= stock ? (
+                              <span className="stock-warning">
+                                Only {stock} left in stock!
+                              </span>
+                            ) : (
+                              <span className="stock-ok">In Stock</span>
+                            )}
+                          </div>
+
+                          <div className="item-actions">
+                            <button
+                              className="action-btn"
+                              onClick={() => saveForLater(item.id, book.title)}
+                              disabled={loading}
+                            >
+                              💾 Save for later
+                            </button>
+                            <button
+                              className="action-btn"
+                              onClick={() =>
+                                handleMoveToWishlist(item.id, book.title)
+                              }
+                              disabled={loading}
+                            >
+                              ❤️ Move to wishlist
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="cart-item-quantity">
+                          <div className="quantity-control">
+                            <button
+                              className="quantity-btn minus"
+                              onClick={() =>
+                                handleDecreaseQuantity(item.id, item.quantity)
+                              }
+                              disabled={item.quantity <= 1 || loading}
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              max={stock}
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleUpdateQuantity(
+                                  item.id,
+                                  parseInt(e.target.value) || 1,
+                                  stock
+                                )
+                              }
+                              className="quantity-input"
+                              disabled={loading}
+                            />
+                            <button
+                              className="quantity-btn plus"
+                              onClick={() =>
+                                handleIncreaseQuantity(
+                                  item.id,
+                                  item.quantity,
+                                  stock
+                                )
+                              }
+                              disabled={item.quantity >= stock || loading}
+                            >
+                              +
+                            </button>
+                          </div>
+                          <div className="quantity-limit">Max: {stock}</div>
+                        </div>
+
+                        <div className="cart-item-price">
+                          <div className="price-current">
+                            ${itemTotal.toFixed(2)}
+                          </div>
+                          <div className="price-per-unit">
+                            ${(book.price || 0).toFixed(2)} each
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Cart Summary */}
                 <div className="cart-summary">
                   <div className="summary-row">
                     <span className="summary-label">
-                      Subtotal ({cartItems.length} items):
+                      Subtotal ({itemCount} items):
                     </span>
                     <span className="summary-value">
                       ${subtotal.toFixed(2)}
@@ -374,13 +447,15 @@ const Cart = () => {
                   <button
                     className="btn btn-primary checkout-btn"
                     onClick={proceedToCheckout}
+                    disabled={loading}
                   >
-                    🛒 Proceed to Checkout
+                    {loading ? "Processing..." : "🛒 Proceed to Checkout"}
                   </button>
 
                   <button
                     className="btn btn-secondary continue-btn"
                     onClick={continueShopping}
+                    disabled={loading}
                   >
                     ← Continue Shopping
                   </button>
@@ -418,8 +493,11 @@ const Cart = () => {
                     type="text"
                     placeholder="Enter promo code"
                     className="promo-input"
+                    disabled={loading}
                   />
-                  <button className="promo-btn">Apply</button>
+                  <button className="promo-btn" disabled={loading}>
+                    Apply
+                  </button>
                 </div>
                 <p className="promo-note">Free shipping on orders over $30</p>
               </div>
@@ -431,9 +509,15 @@ const Cart = () => {
                   Our customer support team is here to help!
                 </p>
                 <div className="help-contacts">
-                  <button className="help-btn">📞 Call Us</button>
-                  <button className="help-btn">💬 Live Chat</button>
-                  <button className="help-btn">✉️ Email</button>
+                  <button className="help-btn" disabled={loading}>
+                    📞 Call Us
+                  </button>
+                  <button className="help-btn" disabled={loading}>
+                    💬 Live Chat
+                  </button>
+                  <button className="help-btn" disabled={loading}>
+                    ✉️ Email
+                  </button>
                 </div>
               </div>
             </div>

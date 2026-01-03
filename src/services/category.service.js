@@ -6,7 +6,16 @@ const categoryService = {
             const response = await api.get("/categories");
             return response.data;
         } catch (error) {
-            throw error.response ? .data || { error: "Failed to fetch categories" };
+            throw error.response ?.data || { error: "Failed to fetch categories" };
+        }
+    },
+
+    getCategoryBySlug: async(slug) => {
+        try {
+            const response = await api.get(`/categories/slug/${slug}`);
+            return response.data;
+        } catch (error) {
+            throw error.response ?.data || { error: "Failed to fetch category" };
         }
     },
 
@@ -16,7 +25,7 @@ const categoryService = {
             return response.data;
         } catch (error) {
             throw (
-                error.response ? .data || { error: "Failed to fetch categories summary" }
+                error.response ?.data || { error: "Failed to fetch categories summary" }
             );
         }
     },

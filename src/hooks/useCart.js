@@ -1,138 +1,154 @@
+import { useState, useCallback, useEffect } from "react";
+import { cartService } from "../services";
 import { useAuth } from "../context/AuthContext";
-import { useState, useEffect, useCallback } from "react";
 
 export const useCart = () => {
-  const { 
-    user, 
-    getCart, 
-    addToCart, 
-    removeFromCart, 
-    updateCartItem, 
-    clearCart 
-  } = useAuth();
-  
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+    const { user } = useAuth();
+    const [cartItems, setCartItems] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-  const fetchCart = useCallback(async () => {
-    if (!user) {
-      setCart(null);
-      return null;
-    }
-    
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getCart();
-      setCart(data);
-      return data;
-    } catch (err) {
-      setError(err?.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [user, getCart]);
+    // Fetch cart items
+    const fetchCart = useCallback(async() => {
+        if (!user) {
+            setCartItems([]);
+            return;
+        }
 
-  const addItemToCart = useCallback(async (bookId, quantity = 1) => {
-    if (!user) {
-      throw new Error("Please login to add items to cart");
-    }
-    
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await addToCart(bookId, quantity);
-      await fetchCart();
-      return data;
-    } catch (err) {
-      setError(err?.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [user, addToCart, fetchCart]);
+        try {
+            setLoading(true);
+            setError(null);
+            const result = await cartService.getCart();
+            if (result.success) {
+                setCartItems(result.data || []);
+            }
+        } catch (err) {
+            setError(err.error || "Failed to fetch cart");
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
 
-  const removeItemFromCart = useCallback(async (cartItemId) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await removeFromCart(cartItemId);
-      await fetchCart();
-      return data;
-    } catch (err) {
-      setError(err?.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [removeFromCart, fetchCart]);
+    // Add item to cart
+    const addToCart = useCallback(
+        async(bookId, quantity = 1) => {
+            try {
+                setLoading(true);
+                const result = await cartService.addToCart(bookId, quantity);
+                if (result.success) {
+                    await fetchCart(); // Refresh cart
+                }
+                return result;
+            } catch (err) {
+                return { success: false, error: err.error };
+            } finally {
+                setLoading(false);
+            }
+        }, [fetchCart]
+    );
 
-  const updateItemQuantity = useCallback(async (cartItemId, quantity) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await updateCartItem(cartItemId, quantity);
-      await fetchCart();
-      return data;
-    } catch (err) {
-      setError(err?.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [updateCartItem, fetchCart]);
+    // Update quantity
+    const updateQuantity = useCallback(
+        async(itemId, quantity) => {
+            try {
+                setLoading(true);
+                const result = await cartService.updateCartItem(itemId, quantity);
+                if (result.success) {
+                    await fetchCart(); // Refresh cart
+                }
+                return result;
+            } catch (err) {
+                return { success: false, error: err.error };
+            } finally {
+                setLoading(false);
+            }
+        }, [fetchCart]
+    );
 
-  const emptyCart = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await clearCart();
-      setCart(null);
-      return data;
-    } catch (err) {
-      setError(err?.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [clearCart]);
+    // Remove item
+    const removeItem = useCallback(
+        async(itemId) => {
+            try {
+                setLoading(true);
+                const result = await cartService.removeFromCart(itemId);
+                if (result.success) {
+                    await fetchCart(); // Refresh cart
+                }
+                return result;
+            } catch (err) {
+                return { success: false, error: err.error };
+            } finally {
+                setLoading(false);
+            }
+        }, [fetchCart]
+    );
 
-  const calculateTotal = useCallback(() => {
-    if (!cart || !cart?.items || cart?.items?.length === 0) return 0;
-    
-    return cart.items.reduce((total, item) => {
-      return total + (item.book?.price || 0) * (item.quantity || 1);
-    }, 0);
-  }, [cart]);
+    // Clear cart
+    const clearCart = useCallback(async() => {
+        try {
+            setLoading(true);
+            const result = await cartService.clearCart();
+            if (result.success) {
+                setCartItems([]);
+            }
+            return result;
+        } catch (err) {
+            return { success: false, error: err.error };
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-  const getItemCount = useCallback(() => {
-    if (!cart || !cart?.items) return 0;
-    return cart.items.reduce((count, item) => count + (item.quantity || 1), 0);
-  }, [cart]);
+    // Move to wishlist
+    const moveToWishlist = useCallback(
+        async(itemId) => {
+            try {
+                setLoading(true);
+                const result = await cartService.moveToWishlist(itemId);
+                if (result.success) {
+                    await fetchCart(); // Refresh cart
+                }
+                return result;
+            } catch (err) {
+                return { success: false, error: err.error };
+            } finally {
+                setLoading(false);
+            }
+        }, [fetchCart]
+    );
 
-  useEffect(() => {
-    if (user) {
-      fetchCart();
-    } else {
-      setCart(null);
-    }
-  }, [user, fetchCart]);
+    // Calculate totals
+    const calculateTotals = useCallback(() => {
+        const subtotal = cartItems.reduce(
+            (total, item) => total + (item.book ? .price || 0) * (item.quantity || 1),
+            0
+        );
+        const tax = subtotal * 0.08; // 8% tax
+        const shipping = subtotal > 30 ? 0 : 5.99;
+        const total = subtotal + tax + shipping;
 
-  return {
-    cart,
-    loading,
-    error,
-    cartItems: cart?.items || [],
-    cartTotal: calculateTotal(),
-    itemCount: getItemCount(),
-    isEmpty: !cart?.items || cart.items.length === 0,
-    fetchCart,
-    addItemToCart,
-    removeItemFromCart,
-    updateItemQuantity,
-    emptyCart,
-    refreshCart: fetchCart,
-  };
+        return { subtotal, tax, shipping, total };
+    }, [cartItems]);
+
+    // Fetch cart on mount and when user changes
+    useEffect(() => {
+        fetchCart();
+    }, [fetchCart]);
+
+    return {
+        cartItems,
+        loading,
+        error,
+        fetchCart,
+        addToCart,
+        updateQuantity,
+        removeItem,
+        clearCart,
+        moveToWishlist,
+        calculateTotals,
+        itemCount: cartItems.reduce(
+            (count, item) => count + (item.quantity || 1),
+            0
+        ),
+    };
 };
