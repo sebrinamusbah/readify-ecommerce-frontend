@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../context/AuthContext";
@@ -109,19 +109,12 @@ const BookDetails = () => {
     setIsAddingToCart(true);
 
     try {
-      const cartItem = {
-        book: bookData,
-        bookId: bookData.id,
-        quantity: quantity,
-        price: bookData.price,
-      };
-
-      const result = await addToCart(cartItem);
+      const result = await addToCart(bookData.id, quantity);
 
       if (result.success) {
         alert(`Added ${quantity} copy(ies) of "${bookData.title}" to cart`);
       } else {
-        alert(`Failed to add to cart: ${result.message || "Unknown error"}`);
+        alert(`Failed to add to cart: ${result.error || "Unknown error"}`);
       }
     } catch (error) {
       alert("Error adding to cart. Please try again.");
@@ -142,19 +135,12 @@ const BookDetails = () => {
     setIsAddingToCart(true);
 
     try {
-      const cartItem = {
-        book: bookData,
-        bookId: bookData.id,
-        quantity: quantity,
-        price: bookData.price,
-      };
-
-      const result = await addToCart(cartItem);
+      const result = await addToCart(bookData.id, quantity);
 
       if (result.success) {
         navigate("/cart");
       } else {
-        alert(`Failed to add to cart: ${result.message || "Unknown error"}`);
+        alert(`Failed to add to cart: ${result.error || "Unknown error"}`);
       }
     } catch (error) {
       alert("Error adding to cart. Please try again.");
@@ -354,7 +340,7 @@ const BookDetails = () => {
                   <button
                     className="quantity-btn minus"
                     onClick={decreaseQuantity}
-                    disabled={quantity <= 1}
+                    disabled={quantity <= 1 || isAddingToCart}
                   >
                     −
                   </button>
@@ -366,11 +352,12 @@ const BookDetails = () => {
                     value={quantity}
                     onChange={handleQuantityChange}
                     className="quantity-input"
+                    disabled={isAddingToCart}
                   />
                   <button
                     className="quantity-btn plus"
                     onClick={increaseQuantity}
-                    disabled={quantity >= bookData.stock}
+                    disabled={quantity >= bookData.stock || isAddingToCart}
                   >
                     +
                   </button>
@@ -381,7 +368,9 @@ const BookDetails = () => {
                 <button
                   className="btn add-to-cart-btn"
                   onClick={handleAddToCart}
-                  disabled={bookData.stock === 0 || isAddingToCart}
+                  disabled={
+                    bookData.stock === 0 || isAddingToCart || cartLoading
+                  }
                 >
                   {isAddingToCart ? (
                     "Adding..."
@@ -394,7 +383,9 @@ const BookDetails = () => {
                 <button
                   className="btn buy-now-btn"
                   onClick={handleBuyNow}
-                  disabled={bookData.stock === 0 || isAddingToCart}
+                  disabled={
+                    bookData.stock === 0 || isAddingToCart || cartLoading
+                  }
                 >
                   {isAddingToCart ? "Processing..." : "⚡ Buy Now"}
                 </button>

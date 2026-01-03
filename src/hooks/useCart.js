@@ -120,7 +120,7 @@ export const useCart = () => {
     // Calculate totals
     const calculateTotals = useCallback(() => {
         const subtotal = cartItems.reduce(
-            (total, item) => total + (item.book ? .price || 0) * (item.quantity || 1),
+            (total, item) => total + (item.book ?.price || 0) * (item.quantity || 1),
             0
         );
         const tax = subtotal * 0.08; // 8% tax

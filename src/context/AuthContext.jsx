@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { authService } from "../services";
+import authService from "../services/authService";
 
-const AuthContext = createContext();
+const AuthContext = createContext({});
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -10,90 +10,220 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Initialize auth state
   useEffect(() => {
-    // Check for existing session on mount
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-    setLoading(false);
+    const initAuth = async () => {
+      try {
+        const token = authService.isAuthenticated();
+        if (token) {
+          const currentUser = authService.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+
+            // Optional: Verify token by fetching fresh user data
+            try {
+              const response = await authService.getProfile();
+              if (response.success && response.data.user) {
+                setUser(response.data.user);
+                localStorage.setItem(
+                  "user",
+                  JSON.stringify(response.data.user)
+                );
+              }
+            } catch (err) {
+              console.log("Could not fetch fresh profile, using cached data");
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+        authService.logout();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
   }, []);
 
-  const login = async (email, password) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const result = await authService.login({ email, password });
-
-      if (result.success) {
-        const user = authService.getCurrentUser();
-        setUser(user);
-        return { success: true, user };
-      } else {
-        setError(result.error || "Login failed");
-        return { success: false, error: result.error };
-      }
-    } catch (err) {
-      const errorMsg = err.error || "Login failed. Please try again.";
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Register function
   const register = async (userData) => {
     try {
-      setLoading(true);
       setError(null);
+      setLoading(true);
 
-      const result = await authService.register(userData);
+      const response = await authService.register(userData);
 
-      if (result.success) {
-        // Auto login after successful registration
-        return await login(userData.email, userData.password);
-      } else {
-        setError(result.error);
-        return { success: false, error: result.error };
+      if (response.success && response.data?.token) {
+        // Auto-login after successful registration
+        const loginResponse = await authService.login({
+          email: userData.email,
+          password: userData.password,
+        });
+
+        if (loginResponse.success && loginResponse.data?.user) {
+          setUser(loginResponse.data.user);
+          return loginResponse.data.user;
+        }
       }
+
+      // If no auto-login, just return success
+      return {
+        success: true,
+        message: response.message || "Registration successful",
+      };
     } catch (err) {
-      const errorMsg = err.error || "Registration failed. Please try again.";
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
+      const errorMessage =
+        err.error || err.message || "Registration failed. Please try again.";
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  // Login function
+  const login = async (email, password) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const response = await authService.login({ email, password });
+
+      if (response.success && response.data?.user) {
+        setUser(response.data.user);
+        return response.data.user;
+      } else {
+        throw new Error(response.message || "Login failed");
+      }
+    } catch (err) {
+      const errorMessage =
+        err.error ||
+        err.message ||
+        "Login failed. Please check your credentials.";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Logout function
   const logout = () => {
     authService.logout();
     setUser(null);
-    window.location.href = "/";
+    setError(null);
   };
 
+  // Update profile function
   const updateProfile = async (userData) => {
     try {
-      const result = await authService.updateProfile(userData);
-      if (result.success) {
-        setUser(result.data.user);
+      setError(null);
+      setLoading(true);
+
+      const response = await authService.updateProfile(userData);
+
+      if (response.success && response.data?.user) {
+        setUser(response.data.user);
+        return response.data.user;
       }
-      return result;
     } catch (err) {
-      return { success: false, error: err.error };
+      const errorMessage =
+        err.error || err.message || "Update failed. Please try again.";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Change password function
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const response = await authService.changePassword({
+        currentPassword,
+        newPassword,
+      });
+
+      return response;
+    } catch (err) {
+      const errorMessage =
+        err.error || err.message || "Failed to change password.";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Forgot password function
+  const forgotPassword = async (email) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const response = await authService.forgotPassword(email);
+      return response;
+    } catch (err) {
+      const errorMessage =
+        err.error || err.message || "Request failed. Please try again.";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset password function
+  const resetPassword = async (token, password) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const response = await authService.resetPassword(token, password);
+      return response;
+    } catch (err) {
+      const errorMessage =
+        err.error || err.message || "Reset failed. Please try again.";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Clear error
+  const clearError = () => {
+    setError(null);
+  };
+
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    return !!user && authService.isAuthenticated();
+  };
+
+  // Check if user has specific role
+  const hasRole = (role) => {
+    return user?.role === role;
   };
 
   const value = {
     user,
     loading,
     error,
-    login,
     register,
+    login,
     logout,
     updateProfile,
-    isAuthenticated: authService.isAuthenticated(),
-    isAdmin: user?.role === "admin",
+    changePassword,
+    forgotPassword,
+    resetPassword,
+    clearError,
+    isAuthenticated,
+    hasRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
