@@ -3,34 +3,39 @@ import api from "./api";
 const authService = {
     /**
      * Register a new user
-     * @param {Object} userData - User registration data
      */
     register: async(userData) => {
         try {
             const response = await api.post("/auth/register", userData);
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Registration failed" };
+            throw error.response ? .data || { error: "Registration failed" };
         }
     },
 
     /**
      * Login user
-     * @param {Object} credentials - Email and password
      */
     login: async(credentials) => {
         try {
             const response = await api.post("/auth/login", credentials);
 
-            if (response.data.data ?.token) {
-                // Store auth data in localStorage
-                localStorage.setItem("token", response.data.data.token);
-                localStorage.setItem("user", JSON.stringify(response.data.data.user));
+            if (response.data ? .token || response.data ? .data ? .token) {
+                // Handle both response structures
+                const token = response.data.token || response.data.data.token;
+                const user = response.data.user || response.data.data.user;
+
+                if (token) localStorage.setItem("token", token);
+                if (user) localStorage.setItem("user", JSON.stringify(user));
             }
 
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Login failed" };
+            console.error("Auth Service Login Error:", error.response ? .data || error);
+            throw error.response ? .data || {
+                error: "Login failed",
+                message: "Check your credentials and try again"
+            };
         }
     },
 
@@ -42,39 +47,36 @@ const authService = {
             const response = await api.get("/auth/me");
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Failed to fetch profile" };
+            throw error.response ? .data || { error: "Failed to fetch profile" };
         }
     },
 
     /**
      * Update user profile
-     * @param {Object} userData - Updated user data
      */
     updateProfile: async(userData) => {
         try {
             const response = await api.put("/auth/profile", userData);
 
-            // Update stored user data if successful
-            if (response.data.success) {
+            if (response.data.success && response.data.data ? .user) {
                 localStorage.setItem("user", JSON.stringify(response.data.data.user));
             }
 
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Failed to update profile" };
+            throw error.response ? .data || { error: "Failed to update profile" };
         }
     },
 
     /**
      * Change password
-     * @param {Object} passwordData - Current and new password
      */
     changePassword: async(passwordData) => {
         try {
             const response = await api.put("/auth/change-password", passwordData);
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Failed to change password" };
+            throw error.response ? .data || { error: "Failed to change password" };
         }
     },
 
@@ -98,26 +100,37 @@ const authService = {
      */
     getCurrentUser: () => {
         const userStr = localStorage.getItem("user");
-        return userStr ? JSON.parse(userStr) : null;
+        if (!userStr) return null;
+
+        try {
+            return JSON.parse(userStr);
+        } catch (error) {
+            console.error("Error parsing user from localStorage:", error);
+            return null;
+        }
+    },
+
+    /**
+     * Get auth token
+     */
+    getToken: () => {
+        return localStorage.getItem("token");
     },
 
     /**
      * Forgot password request
-     * @param {string} email - User email
      */
     forgotPassword: async(email) => {
         try {
             const response = await api.post("/auth/forgot-password", { email });
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Failed to send reset email" };
+            throw error.response ? .data || { error: "Failed to send reset email" };
         }
     },
 
     /**
      * Reset password with token
-     * @param {string} token - Reset token
-     * @param {string} password - New password
      */
     resetPassword: async(token, password) => {
         try {
@@ -126,7 +139,7 @@ const authService = {
             });
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Failed to reset password" };
+            throw error.response ? .data || { error: "Failed to reset password" };
         }
     },
 };
