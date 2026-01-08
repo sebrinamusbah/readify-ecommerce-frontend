@@ -81,7 +81,8 @@ const Login = () => {
     clearError();
 
     try {
-      const user = await login(formData.email, formData.password);
+      // Login the user
+      await login(formData.email, formData.password);
 
       // Remember me functionality
       if (rememberMe) {
@@ -90,17 +91,15 @@ const Login = () => {
         localStorage.removeItem("rememberedEmail");
       }
 
-      // Show success message
-      console.log("Login successful:", user);
+      // Check user role from localStorage
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
 
-      // Redirect based on user role
-      if (user.role === "admin") {
+      if (userData?.role === "admin") {
         navigate("/admin/dashboard", { replace: true });
       } else {
         navigate(from, { replace: true });
       }
     } catch (err) {
-      // Error is already set in AuthContext, we'll show it in the UI
       console.error("Login error:", err.message);
     } finally {
       setIsLoading(false);
@@ -118,8 +117,8 @@ const Login = () => {
   const handleDemoAdminLogin = async () => {
     // For demo purposes - you can remove this if not needed
     setFormData({
-      email: "admin@bookstore.com",
-      password: "admin123",
+      email: "sebrinm9@gmail.com",
+      password: "Sebrina@123",
     });
   };
 
@@ -158,7 +157,7 @@ const Login = () => {
               <p className="test-title">Test Credentials:</p>
               <div className="credential-box">
                 <p>
-                  <strong>Admin:</strong> admin@bookstore.com / admin123
+                  <strong>Admin:</strong> sebrinm9@gmail.com / Sebrina@123
                 </p>
                 <p>
                   <strong>User:</strong> test@example.com / password123

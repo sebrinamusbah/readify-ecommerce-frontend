@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import "./Dashboard.css";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({

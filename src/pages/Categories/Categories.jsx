@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useCategories } from "../hooks/useCategories";
-import { useBooks } from "../hooks/useBooks";
+import { useCategories } from "../../hooks/useCategories";
+import { useBooks } from "../../hooks/useBooks";
 import "./Categories.css";
 
 const Categories = () => {

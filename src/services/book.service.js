@@ -6,16 +6,44 @@ const bookService = {
             const response = await api.get("/books", { params });
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Failed to fetch books" };
+            console.error("Books fetch error:", error);
+            throw (
+                error.response ?.data || {
+                    success: false,
+                    error: "Failed to fetch books",
+                    details: error.message,
+                }
+            );
         }
     },
 
-    getFeaturedBooks: async() => {
+    getBookById: async(id) => {
         try {
-            const response = await api.get("/books/featured");
+            const response = await api.get(`/books/${id}`);
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Failed to fetch featured books" };
+            throw (
+                error.response ?.data || {
+                    success: false,
+                    error: "Failed to fetch book details",
+                }
+            );
+        }
+    },
+
+    getBooksByCategory: async(categorySlug) => {
+        try {
+            const response = await api.get("/books", {
+                params: { category: categorySlug },
+            });
+            return response.data;
+        } catch (error) {
+            throw (
+                error.response ?.data || {
+                    success: false,
+                    error: "Failed to fetch books by category",
+                }
+            );
         }
     },
 
@@ -26,7 +54,12 @@ const bookService = {
             });
             return response.data;
         } catch (error) {
-            throw error.response ?.data || { error: "Search failed" };
+            throw (
+                error.response ?.data || {
+                    success: false,
+                    error: "Failed to search books",
+                }
+            );
         }
     },
 };

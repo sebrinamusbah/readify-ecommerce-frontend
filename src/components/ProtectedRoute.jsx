@@ -1,28 +1,28 @@
+// components/ProtectedRoute.jsx
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+  const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner">⏳</div>
-        <p>Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
 
   if (!user) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" />;
   }
 
-  if (requireAdmin && user.role !== "admin") {
-    // Redirect to home if not admin
-    return <Navigate to="/" replace />;
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/" />;
   }
 
   return children;

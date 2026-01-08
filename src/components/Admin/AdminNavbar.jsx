@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "./AdminNavbar.css";
 
@@ -19,7 +19,11 @@ const AdminNavbar = () => {
   ];
 
   const isActive = (path) => {
-    return location.pathname === path ? "active" : "";
+    // Handle exact match for dashboard, partial for others
+    if (path === "/admin") {
+      return location.pathname === path ? "active" : "";
+    }
+    return location.pathname.startsWith(path) ? "active" : "";
   };
 
   const toggleMobileMenu = () => {
@@ -45,7 +49,7 @@ const AdminNavbar = () => {
 
           {/* Brand/Logo */}
           <div className="admin-navbar-brand">
-            <Link to="/admin" className="admin-logo">
+            <Link to="/admin" className="admin-logo" onClick={closeMobileMenu}>
               <span className="admin-logo-icon">👑</span>
               <span className="admin-logo-text">BookStore Admin</span>
             </Link>
@@ -160,6 +164,11 @@ const AdminNavbar = () => {
       {isMobileMenuOpen && (
         <div className="mobile-menu-overlay" onClick={closeMobileMenu}></div>
       )}
+
+      {/* Main Content Area - ADD THIS SECTION */}
+      <div className="admin-main-content">
+        <Outlet /> {/* This will render the current page content */}
+      </div>
     </>
   );
 };

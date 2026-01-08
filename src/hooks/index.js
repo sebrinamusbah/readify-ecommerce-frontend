@@ -2,16 +2,16 @@
 export { useAuth }
 from "../context/AuthContext.jsx";
 export { useAdmin }
-from "./useAdmin";
+from "./useAdmin.js";
 export { useBooks }
-from "./useBooks";
+from "./useBooks.js";
 export { useCart }
-from "./useCart";
+from "./useCart.js";
 export { useOrders }
-from "./useOrders";
+from "./useOrders.js";
 export { useCategories }
-from "./useCategories";
+from "./useCategories.js";
 export { useProfile }
-from "./useProfile";
+from "./useProfile.js";
 export { useApi }
-from "./useApi";
+from "./useApi.js";

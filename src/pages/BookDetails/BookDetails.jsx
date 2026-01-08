@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useCart } from "../hooks/useCart";
-import { useAuth } from "../context/AuthContext";
+import { useCart } from "../../hooks/useCart";
+import { useAuth } from "../../context/AuthContext";
 import "./BookDetails.css";
 
 const BookDetails = () => {

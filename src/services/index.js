@@ -1,3 +1,4 @@
+// services/index.js (or wherever this file is)
 export { default as api }
 from "./api";
 export { default as authService }
@@ -10,7 +11,3 @@ export { default as cartService }
 from "./cart.service";
 export { default as orderService }
 from "./order.service";
-export { default as reviewService }
-from "./review.service";
-export { default as paymentService }
-from "./payment.service";
