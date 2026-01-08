@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../context/AuthContext";
 import "./Login.css";
 
@@ -7,34 +8,35 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
+  const message = location.state?.message;
 
-  const { authenticate, error, clearError, isAuthenticated } = useAuth();
+  const { user, login, register } = useAuth();
+  const { post, loading: apiLoading, error: apiError, clearError } = useApi();
 
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
-    name: "", // For registration
+    confirmPassword: "",
+    phone: "",
+    address: "",
   });
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [authMessage, setAuthMessage] = useState("");
+  const [authMessage, setAuthMessage] = useState(message || "");
+  const [backendMessage, setBackendMessage] = useState("");
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (user) {
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from]);
-
-  // Clear errors when component mounts
-  useEffect(() => {
-    clearError();
-    return () => clearError();
-  }, [clearError]);
+  }, [user, navigate, from]);
 
   // Check for remembered email
   useEffect(() => {
@@ -45,46 +47,82 @@ const Login = () => {
     }
   }, []);
 
+  // Clear messages when switching modes
+  useEffect(() => {
+    setErrors({});
+    setAuthMessage("");
+    setBackendMessage("");
+  }, [isNewUser]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
     });
+
+    // Clear field-specific error
     if (errors[name]) {
       setErrors({
         ...errors,
         [name]: "",
       });
     }
-    clearError();
+
+    // Clear general errors
+    if (errors.general) {
+      setErrors({
+        ...errors,
+        general: "",
+      });
+    }
+
     setAuthMessage("");
+    setBackendMessage("");
   };
 
   const validateForm = () => {
     const newErrors = {};
 
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
 
+    // Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    // Only validate name for new users
-    if (isNewUser && !formData.name.trim()) {
-      newErrors.name = "Name is required";
+    // Registration validations
+    if (isNewUser) {
+      if (!formData.name.trim()) {
+        newErrors.name = "Name is required";
+      }
+
+      if (!formData.phone.trim()) {
+        newErrors.phone = "Phone number is required";
+      }
+
+      if (!formData.address.trim()) {
+        newErrors.address = "Address is required";
+      }
+
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = "Please confirm your password";
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
     }
 
     return newErrors;
   };
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateForm();
@@ -94,145 +132,203 @@ const Login = () => {
     }
 
     setIsLoading(true);
-    clearError();
+    setErrors({});
     setAuthMessage("");
-
-    console.log("=== LOGIN DEBUG ===");
-    console.log("Email:", formData.email);
-    console.log("Password length:", formData.password.length);
+    setBackendMessage("");
 
     try {
-      // Try direct mock authentication
-      console.log("Attempting authentication...");
+      const result = await login({
+        email: formData.email,
+        password: formData.password,
+      });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Check credentials
-      const isAdmin =
-        formData.email === "sebrinm9@gmail.com" &&
-        formData.password === "Sebrina@123";
-      const isCustomer =
-        formData.email === "customer@example.com" &&
-        formData.password === "Customer@123";
-
-      if (isAdmin || isCustomer) {
-        console.log("✓ Credentials valid");
-
-        const userData = isAdmin
-          ? {
-              id: 1,
-              email: "sebrinm9@gmail.com",
-              name: "Sebrina Musbah",
-              role: "admin",
-              token: "mock-admin-token",
-            }
-          : {
-              id: 2,
-              email: "customer@example.com",
-              name: "Sample Customer",
-              role: "user",
-              token: "mock-user-token",
-            };
-
-        // Store in localStorage
-        localStorage.setItem("user", JSON.stringify(userData));
-        localStorage.setItem("token", userData.token);
-
-        console.log("User stored:", userData);
-
-        // Remember me
+      if (result.success) {
+        // Remember email if checked
         if (rememberMe) {
           localStorage.setItem("rememberedEmail", formData.email);
         } else {
           localStorage.removeItem("rememberedEmail");
         }
 
-        // Redirect
-        if (isAdmin) {
-          console.log("Redirecting to admin dashboard");
-          navigate("/admin/dashboard", { replace: true });
-        } else {
-          console.log("Redirecting to home");
-          navigate(from, { replace: true });
-        }
-      } else {
-        // Auto-create new user
-        console.log("Creating new user...");
-        const newUser = {
-          id: Date.now(),
-          email: formData.email,
-          name: formData.name || formData.email.split("@")[0],
-          role: formData.email.toLowerCase().includes("admin")
-            ? "admin"
-            : "user",
-          token: `new-user-token-${Date.now()}`,
-        };
+        setAuthMessage(`Welcome back, ${result.data.user.name}!`);
 
-        localStorage.setItem("user", JSON.stringify(newUser));
-        localStorage.setItem("token", newUser.token);
-
-        setAuthMessage(`Welcome ${newUser.name}! Account created.`);
-
-        // Small delay to show message
+        // Small delay to show success message
         setTimeout(() => {
-          if (newUser.role === "admin") {
-            navigate("/admin/dashboard", { replace: true });
+          // Redirect based on user role or from location
+          if (result.data.user.role === "admin") {
+            navigate("/admin", { replace: true });
           } else {
             navigate(from, { replace: true });
           }
-        }, 1500);
+        }, 1000);
+      } else {
+        setErrors({
+          general:
+            result.error || "Login failed. Please check your credentials.",
+        });
       }
     } catch (err) {
-      console.error("Error:", err);
       setErrors({
-        general: "Login failed. Try: sebrinm9@gmail.com / Sebrina@123",
+        general: "Network error. Please check your connection.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setIsLoading(true);
+    setErrors({});
+    setAuthMessage("");
+    setBackendMessage("");
+
+    try {
+      const result = await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        address: formData.address,
+      });
+
+      if (result.success) {
+        setAuthMessage(
+          `Account created successfully! Welcome ${formData.name}`
+        );
+
+        // Auto-login after successful registration
+        setTimeout(async () => {
+          const loginResult = await login({
+            email: formData.email,
+            password: formData.password,
+          });
+
+          if (loginResult.success) {
+            navigate(from, { replace: true });
+          }
+        }, 1500);
+      } else {
+        setErrors({
+          general: result.error || "Registration failed. Please try again.",
+        });
+      }
+    } catch (err) {
+      setErrors({
+        general: "Network error. Please check your connection.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    if (isNewUser) {
+      handleRegister(e);
+    } else {
+      handleLogin(e);
+    }
+  };
+
   const toggleAuthMode = () => {
     setIsNewUser(!isNewUser);
+    setFormData({
+      name: "",
+      email: formData.email, // Keep email when switching
+      password: "",
+      confirmPassword: "",
+      phone: "",
+      address: "",
+    });
     setErrors({});
-    clearError();
     setAuthMessage("");
+    setBackendMessage("");
   };
 
-  // UPDATED WITH CORRECT SEED CREDENTIALS
-  const handleQuickAdmin = () => {
+  // Quick login with test credentials
+  const handleQuickAdmin = async () => {
     setFormData({
+      name: "",
       email: "sebrinm9@gmail.com",
       password: "Sebrina@123",
-      name: "Sebrina Admin",
+      confirmPassword: "",
+      phone: "",
+      address: "",
     });
     setIsNewUser(false);
     setErrors({});
-    clearError();
+    setAuthMessage("");
+    setBackendMessage("");
+
+    // Auto-submit after setting credentials
+    setTimeout(() => {
+      const fakeEvent = { preventDefault: () => {} };
+      handleLogin(fakeEvent);
+    }, 100);
   };
 
-  const handleQuickUser = () => {
+  const handleQuickUser = async () => {
     setFormData({
+      name: "",
       email: "customer@example.com",
       password: "Customer@123",
-      name: "Sample Customer",
+      confirmPassword: "",
+      phone: "",
+      address: "",
     });
     setIsNewUser(false);
     setErrors({});
-    clearError();
+    setAuthMessage("");
+    setBackendMessage("");
+
+    // Auto-submit after setting credentials
+    setTimeout(() => {
+      const fakeEvent = { preventDefault: () => {} };
+      handleLogin(fakeEvent);
+    }, 100);
   };
 
   const handleNewUser = () => {
     setFormData({
-      email: "",
-      password: "",
       name: "",
+      email: formData.email, // Keep email
+      password: "",
+      confirmPassword: "",
+      phone: "",
+      address: "",
     });
     setIsNewUser(true);
     setErrors({});
-    clearError();
     setAuthMessage("Please fill in your details to create a new account.");
+    setBackendMessage("");
+  };
+
+  // Test backend connection
+  const testBackendConnection = async () => {
+    try {
+      setBackendMessage("Testing backend connection...");
+      const response = await post(
+        "/auth/login",
+        {
+          email: "test@test.com",
+          password: "test123",
+        },
+        { skipAuth: true }
+      );
+
+      if (response) {
+        setBackendMessage("✓ Backend connection successful!");
+      }
+    } catch (error) {
+      setBackendMessage(`✗ Backend error: ${error.message}`);
+    }
   };
 
   return (
@@ -259,25 +355,56 @@ const Login = () => {
                 <span>Access thousands of books</span>
               </div>
               <div className="feature-item">
-                <span className="feature-icon">🚚</span>
-                <span>Fast & free delivery</span>
+                <span className="feature-icon">🛒</span>
+                <span>Manage your shopping cart</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">📦</span>
+                <span>Track your orders</span>
               </div>
               <div className="feature-item">
                 <span className="feature-icon">⭐</span>
-                <span>Personalized recommendations</span>
+                <span>Write and read reviews</span>
               </div>
             </div>
 
-            {/* UPDATED TEST CREDENTIALS */}
+            {/* Backend Connection Info */}
+            <div className="backend-info">
+              <p className="backend-title">Backend Status:</p>
+              <div className="backend-status">
+                <button
+                  onClick={testBackendConnection}
+                  className="backend-test-btn"
+                  disabled={apiLoading}
+                >
+                  {apiLoading ? "Testing..." : "Test Connection"}
+                </button>
+                {backendMessage && (
+                  <p
+                    className={`backend-message ${
+                      backendMessage.includes("✓") ? "success" : "error"
+                    }`}
+                  >
+                    {backendMessage}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* TEST CREDENTIALS */}
             <div className="test-credentials">
-              <p className="test-title">Test Credentials:</p>
+              <p className="test-title">Test Credentials (from backend):</p>
               <div className="credential-box">
-                <p>
-                  <strong>Admin:</strong> sebrinm9@gmail.com / Sebrina@123
-                </p>
-                <p>
-                  <strong>Customer:</strong> customer@example.com / Customer@123
-                </p>
+                <div className="credential-item">
+                  <strong>Admin:</strong>
+                  <div>Email: sebrinm9@gmail.com</div>
+                  <div>Password: Sebrina@123</div>
+                </div>
+                <div className="credential-item">
+                  <strong>Customer:</strong>
+                  <div>Email: customer@example.com</div>
+                  <div>Password: Customer@123</div>
+                </div>
               </div>
             </div>
 
@@ -306,10 +433,10 @@ const Login = () => {
               </p>
             </div>
 
-            {/* Auth Message */}
-            {authMessage && !error && (
-              <div className="alert alert-info">
-                <div className="alert-icon">ℹ️</div>
+            {/* Success Message */}
+            {authMessage && !errors.general && (
+              <div className="alert alert-success">
+                <div className="alert-icon">✅</div>
                 <div className="alert-content">
                   <p>{authMessage}</p>
                 </div>
@@ -317,35 +444,18 @@ const Login = () => {
             )}
 
             {/* Error Display */}
-            {error && (
-              <div className="alert alert-error">
-                <div className="alert-icon">⚠️</div>
-                <div className="alert-content">
-                  <strong>Authentication Failed</strong>
-                  <p>{error}</p>
-                </div>
-                <button className="alert-close" onClick={clearError}>
-                  ×
-                </button>
-              </div>
-            )}
-
-            {/* Form Validation Error */}
             {errors.general && (
               <div className="alert alert-error">
                 <div className="alert-icon">⚠️</div>
                 <div className="alert-content">
-                  <strong>Error</strong>
+                  <strong>Authentication Error</strong>
                   <p>{errors.general}</p>
                 </div>
-                <button className="alert-close" onClick={() => setErrors({})}>
-                  ×
-                </button>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="login-form">
-              {/* Name field for new users */}
+              {/* Name field for registration */}
               {isNewUser && (
                 <div className="form-group">
                   <label htmlFor="name" className="form-label">
@@ -355,11 +465,12 @@ const Login = () => {
                     type="text"
                     id="name"
                     name="name"
-                    value={formData.name} // FIXED: Added value prop
+                    value={formData.name}
                     onChange={handleChange}
                     className={`form-input ${errors.name ? "error" : ""}`}
                     placeholder="Enter your full name"
                     disabled={isLoading}
+                    required
                   />
                   {errors.name && (
                     <span className="error-message">{errors.name}</span>
@@ -367,6 +478,7 @@ const Login = () => {
                 </div>
               )}
 
+              {/* Email field (always shown) */}
               <div className="form-group">
                 <label htmlFor="email" className="form-label">
                   Email Address
@@ -375,18 +487,66 @@ const Login = () => {
                   type="email"
                   id="email"
                   name="email"
-                  value={formData.email} // FIXED: Added value prop
+                  value={formData.email}
                   onChange={handleChange}
                   className={`form-input ${errors.email ? "error" : ""}`}
                   placeholder="Enter your email"
                   disabled={isLoading}
                   autoComplete="email"
+                  required
                 />
                 {errors.email && (
                   <span className="error-message">{errors.email}</span>
                 )}
               </div>
 
+              {/* Phone field for registration */}
+              {isNewUser && (
+                <div className="form-group">
+                  <label htmlFor="phone" className="form-label">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className={`form-input ${errors.phone ? "error" : ""}`}
+                    placeholder="Enter your phone number"
+                    disabled={isLoading}
+                    required
+                  />
+                  {errors.phone && (
+                    <span className="error-message">{errors.phone}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Address field for registration */}
+              {isNewUser && (
+                <div className="form-group">
+                  <label htmlFor="address" className="form-label">
+                    Address
+                  </label>
+                  <textarea
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className={`form-input ${errors.address ? "error" : ""}`}
+                    placeholder="Enter your address"
+                    disabled={isLoading}
+                    rows="3"
+                    required
+                  />
+                  {errors.address && (
+                    <span className="error-message">{errors.address}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Password field */}
               <div className="form-group">
                 <label htmlFor="password" className="form-label">
                   Password
@@ -396,14 +556,17 @@ const Login = () => {
                     type={showPassword ? "text" : "password"}
                     id="password"
                     name="password"
-                    value={formData.password} // FIXED: Added value prop
+                    value={formData.password}
                     onChange={handleChange}
                     className={`form-input ${errors.password ? "error" : ""}`}
-                    placeholder="Enter your password"
+                    placeholder={
+                      isNewUser ? "Create a password" : "Enter your password"
+                    }
                     disabled={isLoading}
                     autoComplete={
                       isNewUser ? "new-password" : "current-password"
                     }
+                    required
                   />
                   <button
                     type="button"
@@ -419,6 +582,47 @@ const Login = () => {
                 )}
               </div>
 
+              {/* Confirm Password field for registration */}
+              {isNewUser && (
+                <div className="form-group">
+                  <label htmlFor="confirmPassword" className="form-label">
+                    Confirm Password
+                  </label>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className={`form-input ${
+                        errors.confirmPassword ? "error" : ""
+                      }`}
+                      placeholder="Confirm your password"
+                      disabled={isLoading}
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <span className="error-message">
+                      {errors.confirmPassword}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Login options */}
               {!isNewUser && (
                 <div className="form-options">
                   <div className="remember-me">
@@ -437,6 +641,7 @@ const Login = () => {
                 </div>
               )}
 
+              {/* Submit button */}
               <button
                 type="submit"
                 className="login-button"
@@ -454,6 +659,7 @@ const Login = () => {
                 )}
               </button>
 
+              {/* Quick Actions */}
               <div className="quick-actions">
                 <p className="quick-title">Quick Actions:</p>
                 <div className="quick-buttons">
@@ -484,10 +690,23 @@ const Login = () => {
                 </div>
               </div>
 
+              {/* Service Info */}
+              <div className="service-info">
+                <p className="service-title">Connected Services:</p>
+                <div className="service-badges">
+                  <span className="service-badge">🔐 Auth API</span>
+                  <span className="service-badge">📚 Books API</span>
+                  <span className="service-badge">🛒 Cart API</span>
+                  <span className="service-badge">📦 Orders API</span>
+                </div>
+              </div>
+
+              {/* Divider */}
               <div className="divider">
                 <span>Or continue with</span>
               </div>
 
+              {/* Social Login (Placeholder) */}
               <div className="social-login">
                 <button
                   type="button"
@@ -507,6 +726,7 @@ const Login = () => {
                 </button>
               </div>
 
+              {/* Terms Agreement */}
               <div className="terms-agreement">
                 {isNewUser && (
                   <p className="terms-text">
@@ -515,34 +735,36 @@ const Login = () => {
                     <Link to="/privacy">Privacy Policy</Link>
                   </p>
                 )}
+                {!isNewUser && (
+                  <p className="terms-text">
+                    By signing in, you agree to our{" "}
+                    <Link to="/terms">Terms of Service</Link> and{" "}
+                    <Link to="/privacy">Privacy Policy</Link>
+                  </p>
+                )}
               </div>
 
-              {/* Debug section - can remove in production */}
-              <div
-                className="debug-section"
-                style={{ marginTop: "15px", fontSize: "12px" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    console.log("Current form data:", formData);
-                    console.log("LocalStorage:", {
-                      token: localStorage.getItem("token"),
-                      user: localStorage.getItem("user"),
-                    });
-                  }}
-                  style={{
-                    background: "#666",
-                    color: "white",
-                    border: "none",
-                    padding: "5px 10px",
-                    borderRadius: "4px",
-                    fontSize: "11px",
-                  }}
-                >
-                  Debug Info
-                </button>
-              </div>
+              {/* Debug Section - Remove in production */}
+              {process.env.NODE_ENV === "development" && (
+                <div className="debug-section">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log("Current form data:", formData);
+                      console.log("Auth Context:", { user });
+                      console.log("LocalStorage:", {
+                        token: localStorage.getItem("token"),
+                        user: localStorage.getItem("user"),
+                        rememberedEmail:
+                          localStorage.getItem("rememberedEmail"),
+                      });
+                    }}
+                    className="debug-button"
+                  >
+                    Debug Info
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

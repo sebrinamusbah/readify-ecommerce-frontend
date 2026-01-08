@@ -1,176 +1,165 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { useApi } from "../hooks/useApi";
+import { useAuth } from "./AuthContext";
 
-const AuthContext = createContext({});
+const AdminContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export const useAdmin = () => {
+  return useContext(AdminContext);
+};
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const AdminProvider = ({ children }) => {
+  const { user } = useAuth();
+  const { get, post, put, del } = useApi();
+
+  const [adminStats, setAdminStats] = useState({
+    totalUsers: 0,
+    totalBooks: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Mock database based on your seed data
-  const mockUsersDB = [
-    {
-      id: 1,
-      email: "sebrinm9@gmail.com",
-      password: "Sebrina@123",
-      name: "Sebrina Musbah",
-      role: "admin",
-      address: "Addis Ababa, Ethiopia",
-      phone: "0985673299",
-    },
-    {
-      id: 2,
-      email: "customer@example.com",
-      password: "Customer@123",
-      name: "Sample Customer",
-      role: "user",
-      address: "Addis Ababa, Ethiopia",
-      phone: "0992474781",
-    },
-  ];
+  const fetchAdminStats = async () => {
+    if (!user || user.role !== "admin") return;
 
-  // Initialize auth
-  useEffect(() => {
-    const initAuth = () => {
-      try {
-        const token = localStorage.getItem("token");
-        const userStr = localStorage.getItem("user");
-
-        if (token && userStr) {
-          const userData = JSON.parse(userStr);
-          setUser(userData);
-        }
-      } catch (err) {
-        console.error("Auth init error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  // Simple authenticate function that works
-  const authenticate = async (email, password) => {
+    setIsLoading(true);
     try {
-      setError(null);
-      setLoading(true);
+      // Fetch all stats in parallel
+      const [usersRes, booksRes, ordersRes] = await Promise.all([
+        get("/admin/users?limit=1000"),
+        get("/books?limit=1000"),
+        get("/orders"),
+      ]);
 
-      console.log("Authenticating:", email);
+      const users = usersRes?.users || [];
+      const books = booksRes?.books || [];
+      const orders = ordersRes?.orders || [];
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Check against mock database
-      const foundUser = mockUsersDB.find(
-        (u) =>
-          u.email.toLowerCase() === email.toLowerCase() &&
-          u.password === password
+      // Calculate totals
+      const totalRevenue = orders.reduce(
+        (sum, order) => sum + (order.totalAmount || 0),
+        0
       );
 
-      if (foundUser) {
-        // Create user object without password
-        const userData = {
-          id: foundUser.id,
-          email: foundUser.email,
-          name: foundUser.name,
-          role: foundUser.role,
-          token: `mock-jwt-token-${Date.now()}-${foundUser.id}`,
-        };
+      const pendingOrders = orders.filter(
+        (order) => order.status === "pending" || order.status === "processing"
+      ).length;
 
-        // Store in localStorage
-        localStorage.setItem("user", JSON.stringify(userData));
-        localStorage.setItem("token", userData.token);
-
-        setUser(userData);
-
-        return {
-          success: true,
-          user: userData,
-          isNewUser: false,
-          message: "Login successful",
-        };
-      } else {
-        // Auto-register new user
-        const newUser = {
-          id: Date.now(),
-          email,
-          name: email.split("@")[0],
-          role: email.toLowerCase().includes("admin") ? "admin" : "user",
-          token: `mock-jwt-token-${Date.now()}`,
-        };
-
-        localStorage.setItem("user", JSON.stringify(newUser));
-        localStorage.setItem("token", newUser.token);
-
-        setUser(newUser);
-
-        return {
-          success: true,
-          user: newUser,
-          isNewUser: true,
-          message: "Account created and logged in",
-        };
-      }
+      setAdminStats({
+        totalUsers: users.length,
+        totalBooks: books.length,
+        totalOrders: orders.length,
+        totalRevenue,
+        pendingOrders,
+      });
     } catch (err) {
-      console.error("Auth error:", err);
-      const errorMessage = "Authentication failed. Please try again.";
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      setError(err.message);
+      console.error("Error fetching admin stats:", err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Login function
-  const login = async (email, password) => {
-    return authenticate(email, password);
+  // User Management
+  const updateUserRole = async (userId, newRole) => {
+    try {
+      const response = await put(`/admin/users/${userId}/role`, {
+        role: newRole,
+      });
+      await fetchAdminStats(); // Refresh stats
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
 
-  // Register function
-  const register = async (userData) => {
-    return authenticate(userData.email, userData.password);
+  const deleteUser = async (userId) => {
+    try {
+      const response = await del(`/admin/users/${userId}`);
+      await fetchAdminStats();
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
 
-  // Logout
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-    setError(null);
+  // Book Management
+  const createBook = async (bookData) => {
+    try {
+      const response = await post("/admin/books", bookData);
+      await fetchAdminStats();
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
 
-  // Clear error
-  const clearError = () => {
-    setError(null);
+  const updateBook = async (bookId, bookData) => {
+    try {
+      const response = await put(`/admin/books/${bookId}`, bookData);
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
 
-  // Check if authenticated
-  const isAuthenticated = () => {
-    return !!user && !!localStorage.getItem("token");
+  const deleteBook = async (bookId) => {
+    try {
+      const response = await del(`/admin/books/${bookId}`);
+      await fetchAdminStats();
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
 
-  // Check if admin
-  const isAdmin = () => {
-    if (!user) return false;
-    const role = user.role || user.userRole || user.type;
-    return role === "admin" || role === "administrator";
+  // Order Management
+  const updateOrderStatus = async (orderId, status) => {
+    try {
+      const response = await put(`/admin/orders/${orderId}/status`, { status });
+      await fetchAdminStats();
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
+
+  const deleteOrder = async (orderId) => {
+    try {
+      const response = await del(`/admin/orders/${orderId}`);
+      await fetchAdminStats();
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Fetch stats on mount and when user changes
+  useEffect(() => {
+    if (user?.role === "admin") {
+      fetchAdminStats();
+    }
+  }, [user]);
 
   const value = {
-    user,
-    loading,
+    adminStats,
+    isLoading,
     error,
-    authenticate,
-    login,
-    register,
-    logout,
-    clearError,
-    isAuthenticated,
-    isAdmin,
+    fetchAdminStats,
+    updateUserRole,
+    deleteUser,
+    createBook,
+    updateBook,
+    deleteBook,
+    updateOrderStatus,
+    deleteOrder,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
+  );
 };
