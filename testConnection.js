@@ -1,5 +1,5 @@
 // src/testConnection.js
-import { testBackendConnection } from "./utils/apiTest";
+import { testBackendConnection } from "./src/utils/apiTest";
 
 // Run this in browser console or useEffect
 const runTests = async () => {
