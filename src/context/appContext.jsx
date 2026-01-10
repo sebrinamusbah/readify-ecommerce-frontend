@@ -80,10 +80,7 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await api.getAllBooks(params);
       setBooks(data.data || data.books || data);
-      setTotalBooks(
-        data.total || data.count || (data.data ? data.data.length : 0)
-      );
-      return data;
+      return data; // ← THIS MUST RETURN DATA
     } catch (err) {
       const errorMsg = err.error || err.message || "Failed to fetch books";
       setError(errorMsg);
@@ -110,10 +107,11 @@ export const AppProvider = ({ children }) => {
 
   // 5. FETCH CATEGORIES
   const fetchCategories = async () => {
+    setLoading(true);
     try {
       const data = await api.getAllCategories();
       setCategories(data.data || data.categories || data);
-      return data;
+      return data; // ← THIS MUST RETURN DATA
     } catch (err) {
       console.error("Failed to fetch categories:", err);
       return [];

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAppContext } from "../../context/AppContext";
+import { useAppContext } from "../../context/appContext.jsx";
 import "./Home.css";
 
 const Home = () => {
@@ -27,98 +27,66 @@ const Home = () => {
 
   // Fetch real data from backend
   useEffect(() => {
-    loadData();
+    let isMounted = true;
+
+    if (isMounted) {
+      loadData();
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+  // Add this useEffect for debugging
+  useEffect(() => {
+    console.log("Debug - Books state:", books);
+    console.log("Debug - Categories state:", categories);
+    console.log("Debug - User state:", user);
+    console.log("Debug - Cart state:", cart);
+  }, [books, categories, user, cart]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       // Fetch books and categories from backend
-      const [booksData, categoriesData] = await Promise.all([
-        fetchBooks(),
-        fetchCategories(),
-      ]);
+      await fetchBooks();
+      await fetchCategories();
 
-      // Set featured categories (first 6 categories)
-      if (categoriesData && categoriesData.length > 0) {
-        const featured = categoriesData.slice(0, 6).map((cat, index) => ({
-          id: cat.id,
-          name: cat.name,
-          count: cat.bookCount || Math.floor(Math.random() * 100) + 50, // Fallback if no count
-          color: getCategoryColor(index),
-          slug: cat.slug,
-        }));
-        setFeaturedCategories(featured);
-      } else {
-        // Fallback to sample data if no categories
-        setFeaturedCategories([
-          {
-            id: 1,
-            name: "Fiction",
-            count: 150,
-            color: "#3498db",
-            slug: "fiction",
-          },
-          {
-            id: 2,
-            name: "Non-Fiction",
-            count: 120,
-            color: "#2ecc71",
-            slug: "non-fiction",
-          },
-          {
-            id: 3,
-            name: "Science",
-            count: 85,
-            color: "#9b59b6",
-            slug: "science",
-          },
-          {
-            id: 4,
-            name: "Biography",
-            count: 65,
-            color: "#e74c3c",
-            slug: "biography",
-          },
-          {
-            id: 5,
-            name: "Technology",
-            count: 90,
-            color: "#f39c12",
-            slug: "technology",
-          },
-          {
-            id: 6,
-            name: "Children",
-            count: 110,
-            color: "#1abc9c",
-            slug: "children",
-          },
-        ]);
-      }
+      // Give time for state to update
+      setTimeout(() => {
+        // Set featured categories (first 6 categories)
+        if (categories && categories.length > 0) {
+          const featured = categories.slice(0, 6).map((cat, index) => ({
+            id: cat.id,
+            name: cat.name,
+            count: cat.bookCount || Math.floor(Math.random() * 100) + 50,
+            color: getCategoryColor(index),
+            slug: cat.slug || cat.name.toLowerCase().replace(/\s+/g, "-"),
+          }));
+          setFeaturedCategories(featured);
+        }
 
-      // Set popular books (first 6 books from API)
-      if (books && books.length > 0) {
-        const popular = books.slice(0, 6).map((book) => ({
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          price: book.price,
-          rating: book.averageRating || 4.5, // Use actual rating if available
-          image:
-            book.imageUrl ||
-            `https://via.placeholder.com/150x200/3498db/ffffff?text=${book.title.substring(
-              0,
-              10
-            )}`,
-          description: book.description,
-          categoryId: book.categoryId,
-        }));
-        setPopularBooks(popular);
-      }
+        // Set popular books (first 6 books from API)
+        if (books && books.length > 0) {
+          const popular = books.slice(0, 6).map((book) => ({
+            id: book.id,
+            title: book.title || "Unknown Title",
+            author: book.author || "Unknown Author",
+            price: book.price || 0,
+            rating: book.averageRating || 4.5,
+            image:
+              book.imageUrl ||
+              `https://via.placeholder.com/150x200/3498db/ffffff?text=${(
+                book.title || "Book"
+              ).substring(0, 10)}`,
+          }));
+          setPopularBooks(popular);
+        }
+
+        setIsLoading(false);
+      }, 100);
     } catch (error) {
       console.error("Failed to load homepage data:", error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -199,7 +167,7 @@ const Home = () => {
             </Link>
             {user ? (
               <Link to="/cart" className="btn btn-secondary">
-                View Cart ({cart.length || 0})
+                View Cart ({cart ? cart.length : 0})
               </Link>
             ) : (
               <Link to="/register" className="btn btn-secondary">
@@ -238,7 +206,9 @@ const Home = () => {
               <button
                 key={category.id}
                 className="tag"
-                onClick={() => navigate(`/books?category=${category.slug}`)}
+                onClick={() =>
+                  navigate(`/categories?filter=${category.slug || category.id}`)
+                }
               >
                 {category.name}
               </button>
@@ -259,7 +229,7 @@ const Home = () => {
           <div className="categories-grid">
             {featuredCategories.map((category) => (
               <Link
-                to={`/books?category=${category.slug}`}
+                to={`/categories?filter=${category.slug || category.id}`}
                 key={category.id}
                 className="category-card"
                 style={{ "--category-color": category.color }}
@@ -290,7 +260,7 @@ const Home = () => {
               View All Books →
             </Link>
           </div>
-          {popularBooks.length === 0 ? (
+          {popularBooks.length === 0 && !isLoading ? (
             <div className="no-books-message">
               <p>No books available. Check back soon!</p>
               <Link to="/books" className="btn btn-primary">
@@ -402,9 +372,33 @@ const Home = () => {
       {error && (
         <div className="error-message">
           <p>{error}</p>
-          <button onClick={loadData}>Retry</button>
+          <button onClick={() => loadData()}>Retry</button>
         </div>
       )}
+      {/* Temporary debug button - remove after testing */}
+      <button
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          background: "#3498db",
+          color: "white",
+          padding: "10px",
+          borderRadius: "5px",
+          zIndex: 1000,
+        }}
+        onClick={() => {
+          console.log("Current state:");
+          console.log("Books:", books);
+          console.log("Categories:", categories);
+          console.log("User:", user);
+          console.log("Cart:", cart);
+          console.log("Popular Books:", popularBooks);
+          console.log("Featured Categories:", featuredCategories);
+        }}
+      >
+        Debug State
+      </button>
     </div>
   );
 };

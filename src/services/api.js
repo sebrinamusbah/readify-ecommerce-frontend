@@ -21,15 +21,6 @@ API.interceptors.request.use((config) => {
     return config;
 });
 
-// Request interceptor
-API.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
 // Response interceptor
 API.interceptors.response.use(
     (response) => {
@@ -42,9 +33,8 @@ API.interceptors.response.use(
             window.location.href = '/login';
         }
 
-        // Return consistent error format
         return Promise.reject({
-            error: error.response ?.data ?.error || error.response ?.data ?.message || 'Something went wrong',
+            error: error.response ?.data ?.error || 'Something went wrong',
             message: error.response ?.data ?.message || error.message,
             status: error.response ?.status
         });
@@ -59,11 +49,11 @@ export const getProfile = () => API.get('/auth/profile');
 // BOOK SERVICES
 export const getAllBooks = (params = {}) => API.get('/books', { params });
 export const getBookById = (id) => API.get(`/books/${id}`);
-export const searchBooks = (query) => API.get('/books', { params: { search: query } });
-export const getBooksByCategory = (categoryId) => API.get(`/books?category=${categoryId}`);
+export const searchBooks = (query) => API.get(`/books/search?q=${query}`);
 
 // CATEGORY SERVICES
 export const getAllCategories = () => API.get('/categories');
+export const getCategoryBySlug = (slug) => API.get(`/categories/${slug}`);
 
 // CART SERVICES
 export const getCart = () => API.get('/cart');
@@ -87,6 +77,10 @@ export const createPayment = (orderId, paymentData) =>
 export const getBookReviews = (bookId) => API.get(`/reviews/book/${bookId}`);
 export const addReview = (bookId, reviewData) =>
     API.post(`/reviews/${bookId}`, reviewData);
+
+// ADMIN SERVICES
+export const addBook = (bookData) => API.post('/admin/books', bookData);
+export const addCategory = (categoryData) => API.post('/admin/categories', categoryData);
 
 // TEST CONNECTION
 export const testConnection = () => API.get('/health');
