@@ -16,6 +16,7 @@ import Users from "./pages/Admin/Users";
 import Reports from "./pages/Admin/Reports";
 import Settings from "./pages/Admin/Settings";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Books from "./pages/Books/Books";
 
 // Create simple placeholder components for missing admin pages
 const ManageBooksPlaceholder = () => (
@@ -65,6 +66,7 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/books" element={<Categories />} />
 
             {/* Admin Routes - Protected */}
             <Route
