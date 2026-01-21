@@ -171,28 +171,29 @@ const Categories = () => {
   });
 
   // Handle category selection
+  // In Categories.jsx, update handleCategoryClick:
   const handleCategoryClick = (categorySlug) => {
     if (categorySlug === "all") {
       setSelectedCategories(["all"]);
       navigate("/categories");
     } else {
+      // If clicking a category when "all" is selected
       if (selectedCategories.includes("all")) {
         setSelectedCategories([categorySlug]);
         navigate(`/categories?category=${categorySlug}`);
-      } else if (selectedCategories.includes(categorySlug)) {
-        const newCategories = selectedCategories.filter(
-          (cat) => cat !== categorySlug,
-        );
-        setSelectedCategories(
-          newCategories.length > 0 ? newCategories : ["all"],
-        );
-        navigate(
-          newCategories.length > 0
-            ? `/categories?category=${newCategories[0]}`
-            : "/categories",
-        );
-      } else {
-        setSelectedCategories([...selectedCategories, categorySlug]);
+      }
+      // If clicking the same category that's already selected
+      else if (
+        selectedCategories.includes(categorySlug) &&
+        selectedCategories.length === 1
+      ) {
+        // If only this category is selected, go back to "all"
+        setSelectedCategories(["all"]);
+        navigate("/categories");
+      }
+      // If clicking a different category
+      else {
+        setSelectedCategories([categorySlug]);
         navigate(`/categories?category=${categorySlug}`);
       }
     }

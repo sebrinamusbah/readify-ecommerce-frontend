@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext"; // Import AuthContext
+import { useAuth } from "../../context/AuthContext";
 import "./Home.css";
 
 const Home = () => {
@@ -12,12 +12,23 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingToCart, setIsAddingToCart] = useState({});
 
+  // Add this useEffect to debug book IDs
+  useEffect(() => {
+    console.log(
+      "Current books in database:",
+      getBooks().map((b) => ({
+        id: b.id,
+        title: b.title,
+        price: b.price,
+      })),
+    );
+  }, [getBooks]);
   // Load data from mock database
   useEffect(() => {
     const categories = getCategories();
     const books = getBooks();
 
-    // Set featured categories (or use sample if none)
+    // Set featured categories
     if (categories.length > 0) {
       setFeaturedCategories(
         categories.slice(0, 6).map((cat, index) => ({
@@ -39,7 +50,7 @@ const Home = () => {
       ]);
     }
 
-    // Set popular books (use real books or sample)
+    // Set popular books
     if (books.length > 0) {
       const displayBooks = books.slice(0, 6).map((book) => {
         const category = categories.find((c) => c.id === book.categoryId);
@@ -48,7 +59,7 @@ const Home = () => {
           title: book.title,
           author: book.author,
           price: book.price,
-          rating: 4.5, // Default rating
+          rating: 4.5,
           image:
             book.imageUrl ||
             `https://via.placeholder.com/150x200/3498db/ffffff?text=${book.title.substring(0, 5)}`,
@@ -61,7 +72,7 @@ const Home = () => {
     // If no books in DB, keep the sample books from your original code
   }, [mockDB, getCategories, getBooks]);
 
-  // Helper function for category colors (matches your original colors)
+  // Helper function for category colors
   const getCategoryColor = (index) => {
     const colors = [
       "#3498db",
@@ -74,11 +85,20 @@ const Home = () => {
     return colors[index % colors.length];
   };
 
+  // FIXED: Search functionality - navigate to categories with search query
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/categories?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/categories?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      // If search is empty, just go to categories
+      navigate("/categories");
     }
+  };
+
+  // Handle tag clicks for search
+  const handleTagClick = (tag) => {
+    navigate(`/categories?search=${encodeURIComponent(tag)}`);
   };
 
   const handleAddToCart = async (book, e) => {
@@ -111,7 +131,7 @@ const Home = () => {
 
   return (
     <div className="home-page">
-      {/* HERO BANNER SECTION - NO CHANGES TO STRUCTURE */}
+      {/* HERO BANNER SECTION */}
       <section className="hero-banner">
         <div className="hero-content">
           <h1 className="hero-title">Discover Your Next Favorite Book</h1>
@@ -130,7 +150,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* SEARCH BAR SECTION - NO CHANGES TO STRUCTURE */}
+      {/* FIXED: SEARCH BAR SECTION - Now working */}
       <section className="search-section">
         <div className="container">
           <form className="search-form" onSubmit={handleSearch}>
@@ -140,6 +160,11 @@ const Home = () => {
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch(e);
+                }
+              }}
             />
             <button type="submit" className="search-btn">
               🔍 Search
@@ -147,15 +172,39 @@ const Home = () => {
           </form>
           <div className="search-tags">
             <span>Popular:</span>
-            <button className="tag">Fiction</button>
-            <button className="tag">Science</button>
-            <button className="tag">Best Sellers</button>
-            <button className="tag">New Releases</button>
+            <button
+              className="tag"
+              onClick={() => handleTagClick("Fiction")}
+              type="button"
+            >
+              Fiction
+            </button>
+            <button
+              className="tag"
+              onClick={() => handleTagClick("Science")}
+              type="button"
+            >
+              Science
+            </button>
+            <button
+              className="tag"
+              onClick={() => handleTagClick("Best Sellers")}
+              type="button"
+            >
+              Best Sellers
+            </button>
+            <button
+              className="tag"
+              onClick={() => handleTagClick("New Releases")}
+              type="button"
+            >
+              New Releases
+            </button>
           </div>
         </div>
       </section>
 
-      {/* FEATURED CATEGORIES SECTION - MINIMAL DATA CHANGES ONLY */}
+      {/* FEATURED CATEGORIES SECTION */}
       <section className="featured-categories">
         <div className="container">
           <div className="section-header">
@@ -189,7 +238,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* POPULAR BOOKS SECTION - MINIMAL DATA CHANGES ONLY */}
+      {/* POPULAR BOOKS SECTION */}
       <section className="popular-books">
         <div className="container">
           <div className="section-header">
@@ -237,7 +286,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CALL TO ACTION SECTION - NO CHANGES */}
+      {/* CALL TO ACTION SECTION */}
       <section className="cta-section">
         <div className="container">
           <div className="cta-content">

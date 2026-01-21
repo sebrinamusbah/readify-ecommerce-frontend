@@ -1,9 +1,12 @@
-// In src/App.jsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom"; // Added Navigate import
 import { AuthProvider } from "./context/AuthContext";
-import Navbar from "./components/Navbar/Navbar";
-import Footer from "./components/Footer/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home/Home";
 import Categories from "./pages/Categories/Categories";
 import BookDetails from "./pages/BookDetails/BookDetails";
@@ -12,53 +15,18 @@ import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Admin/Dashboard";
 import ManageBooks from "./pages/Admin/ManageBooks";
-import Orders from "./pages/Admin/Orders";
-import Users from "./pages/Admin/Users";
-import Reports from "./pages/Admin/Reports";
-import Settings from "./pages/Admin/Settings";
-import ProtectedRoute from "./components/ProtectedRoute";
-
-// Create simple placeholder components for missing admin pages
-const ManageBooksPlaceholder = () => (
-  <div className="admin-page">
-    <h1>Manage Books Page</h1>
-  </div>
-);
-const OrdersPlaceholder = () => (
-  <div className="admin-page">
-    <h1>Orders Page</h1>
-  </div>
-);
-const UsersPlaceholder = () => (
-  <div className="admin-page">
-    <h1>Users Page</h1>
-  </div>
-);
-const ReportsPlaceholder = () => (
-  <div className="admin-page">
-    <h1>Reports Page</h1>
-  </div>
-);
-const SettingsPlaceholder = () => (
-  <div className="admin-page">
-    <h1>Settings Page</h1>
-  </div>
-);
+import Navbar from "./components/Navbar/Navbar";
+import Footer from "./components/Footer/Footer";
+import "./App.css";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="app-container">
-          {/* Only show main navbar on non-admin routes */}
-          <Routes>
-            <Route path="/admin/*" element={null} />
-            <Route path="*" element={<Navbar />} />
-          </Routes>
-
-          <main className="main-content">
+        <div className="app">
+          <Navbar />
+          <div className="main-content">
             <Routes>
-              {/* Public Routes */}
               <Route path="/" element={<Home />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/book/:id" element={<BookDetails />} />
@@ -66,9 +34,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
-              {/* Admin Routes - Protected */}
+              {/* Admin Routes */}
               <Route
-                path="/admin"
+                path="/admin/dashboard"
                 element={
                   <ProtectedRoute requireAdmin>
                     <Dashboard />
@@ -76,10 +44,10 @@ function App() {
                 }
               />
               <Route
-                path="/admin/books"
+                path="/admin/manage-books"
                 element={
                   <ProtectedRoute requireAdmin>
-                    <ManageBooksPlaceholder />
+                    <ManageBooks />
                   </ProtectedRoute>
                 }
               />
@@ -87,7 +55,7 @@ function App() {
                 path="/admin/orders"
                 element={
                   <ProtectedRoute requireAdmin>
-                    <OrdersPlaceholder />
+                    <h1>Orders Page (Coming Soon)</h1>
                   </ProtectedRoute>
                 }
               />
@@ -95,7 +63,7 @@ function App() {
                 path="/admin/users"
                 element={
                   <ProtectedRoute requireAdmin>
-                    <UsersPlaceholder />
+                    <h1>Users Page (Coming Soon)</h1>
                   </ProtectedRoute>
                 }
               />
@@ -103,26 +71,26 @@ function App() {
                 path="/admin/reports"
                 element={
                   <ProtectedRoute requireAdmin>
-                    <ReportsPlaceholder />
+                    <h1>Reports Page (Coming Soon)</h1>
                   </ProtectedRoute>
                 }
               />
+
+              {/* Redirect /admin to /admin/dashboard */}
               <Route
-                path="/admin/settings"
+                path="/admin"
                 element={
                   <ProtectedRoute requireAdmin>
-                    <SettingsPlaceholder />
+                    <Navigate to="/admin/dashboard" replace />
                   </ProtectedRoute>
                 }
               />
-            </Routes>
-          </main>
 
-          {/* Only show footer on non-admin routes */}
-          <Routes>
-            <Route path="/admin/*" element={null} />
-            <Route path="*" element={<Footer />} />
-          </Routes>
+              {/* 404 Page - Catch all */}
+              <Route path="*" element={<h1>404 - Page Not Found</h1>} />
+            </Routes>
+          </div>
+          <Footer />
         </div>
       </Router>
     </AuthProvider>

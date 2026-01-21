@@ -1,81 +1,181 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext"; // Import AuthContext
 import "./BookDetails.css";
 
 const BookDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, mockDB, getBooks, getCategories, addToCart } = useAuth();
 
-  // Sample book data - In real app, fetch from API using id
-  const bookData = {
-    id: 1,
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    price: 12.99,
-    originalPrice: 19.99,
-    rating: 4.5,
-    reviewCount: 1284,
-    category: "Fiction",
-    pages: 218,
-    publishedYear: 1925,
-    publisher: "Charles Scribner's Sons",
-    isbn: "9780743273565",
-    image:
-      "https://via.placeholder.com/400x500/3498db/ffffff?text=The+Great+Gatsby",
-    shortDescription:
-      "A classic novel of the Jazz Age, exploring themes of idealism, resistance to change, social upheaval, and excess.",
-    longDescription: `The Great Gatsby, F. Scott Fitzgerald's third book, stands as the supreme achievement of his career. This exemplary novel of the Jazz Age has been acclaimed by generations of readers. The story of the mysteriously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan, of lavish parties on Long Island at a time when The New York Times noted "gin was the national drink and sex the national obsession," it is an exquisitely crafted tale of America in the 1920s.
-    
-    The Great Gatsby is one of the great classics of twentieth-century literature, a novel that poignantly expresses the American experience and continues to resonate with readers today. Fitzgerald's masterful storytelling and vivid prose create a timeless portrait of the American Dream and its disillusionment.`,
-    stock: 15,
-    isBestseller: true,
-    isNewRelease: false,
-  };
-
-  // Sample related books
-  const relatedBooks = [
-    {
-      id: 2,
-      title: "To Kill a Mockingbird",
-      author: "Harper Lee",
-      price: 14.99,
-      rating: 4.8,
-      image:
-        "https://via.placeholder.com/150x200/2ecc71/ffffff?text=Mockingbird",
-    },
-    {
-      id: 3,
-      title: "1984",
-      author: "George Orwell",
-      price: 10.99,
-      rating: 4.7,
-      image: "https://via.placeholder.com/150x200/9b59b6/ffffff?text=1984",
-    },
-    {
-      id: 4,
-      title: "Pride and Prejudice",
-      author: "Jane Austen",
-      price: 9.99,
-      rating: 4.6,
-      image: "https://via.placeholder.com/150x200/e74c3c/ffffff?text=Pride",
-    },
-    {
-      id: 5,
-      title: "The Catcher in the Rye",
-      author: "J.D. Salinger",
-      price: 11.99,
-      rating: 4.4,
-      image: "https://via.placeholder.com/150x200/f39c12/ffffff?text=Catcher",
-    },
-  ];
+  // Real book data from mock database
+  const [bookData, setBookData] = useState(null);
+  const [relatedBooks, setRelatedBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(false);
 
   const [quantity, setQuantity] = useState(1);
-  const [isInWishlist, setIsInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
+
+  // Load book data from mock database
+  useEffect(() => {
+    setIsLoading(true);
+
+    const books = getBooks();
+    const categories = getCategories();
+
+    // Find the book by ID
+    const book = books.find((b) => b.id === parseInt(id));
+
+    if (book) {
+      const category = categories.find((c) => c.id === book.categoryId);
+
+      // Format book data for display
+      const formattedBook = {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        description: book.description,
+        price: book.price,
+        originalPrice: book.price * 1.3, // Simulate discount
+        rating: 4.5, // Default rating
+        reviewCount: Math.floor(Math.random() * 1000) + 100, // Random reviews
+        category: category ? category.name : "Uncategorized",
+        categoryId: book.categoryId,
+        pages: Math.floor(Math.random() * 400) + 100, // Random pages
+        publishedYear: 2000 + Math.floor(Math.random() * 24), // Random year
+        publisher: "Sample Publisher",
+        isbn: `978${Math.floor(Math.random() * 1000000000)
+          .toString()
+          .padStart(9, "0")}`,
+        image:
+          book.imageUrl ||
+          `https://via.placeholder.com/400x500/3498db/ffffff?text=${book.title.substring(0, 20)}`,
+        stock: book.stock,
+        isBestseller: Math.random() > 0.7,
+        isNewRelease: Math.random() > 0.5,
+        createdAt: book.createdAt,
+      };
+
+      setBookData(formattedBook);
+
+      // Get related books (same category)
+      const related = books
+        .filter((b) => b.id !== book.id && b.categoryId === book.categoryId)
+        .slice(0, 4)
+        .map((b) => {
+          const cat = categories.find((c) => c.id === b.categoryId);
+          return {
+            id: b.id,
+            title: b.title,
+            author: b.author,
+            price: b.price,
+            rating: 4.5,
+            image:
+              b.imageUrl ||
+              `https://via.placeholder.com/150x200/3498db/ffffff?text=${b.title.substring(0, 5)}`,
+            category: cat?.name || "Uncategorized",
+          };
+        });
+
+      // If not enough related books, add some samples
+      if (related.length < 4) {
+        const sampleBooks = getSampleRelatedBooks();
+        setRelatedBooks([
+          ...related,
+          ...sampleBooks.slice(0, 4 - related.length),
+        ]);
+      } else {
+        setRelatedBooks(related);
+      }
+    } else {
+      // If book not found, use sample data
+      setBookData(getSampleBookData());
+      setRelatedBooks(getSampleRelatedBooks());
+    }
+
+    setIsLoading(false);
+
+    // Check if book is in wishlist (simulated)
+    const storedWishlist = localStorage.getItem("wishlist") || "[]";
+    const wishlist = JSON.parse(storedWishlist);
+    setIsInWishlist(wishlist.includes(parseInt(id)));
+  }, [id, mockDB, getBooks, getCategories]);
+
+  // Sample data fallbacks
+  const getSampleBookData = () => {
+    return {
+      id: parseInt(id),
+      title: "Sample Book",
+      author: "Sample Author",
+      price: 12.99,
+      originalPrice: 19.99,
+      rating: 4.5,
+      reviewCount: 1284,
+      category: "Fiction",
+      pages: 218,
+      publishedYear: 1925,
+      publisher: "Sample Publisher",
+      isbn: "9780743273565",
+      image:
+        "https://via.placeholder.com/400x500/3498db/ffffff?text=Sample+Book",
+      shortDescription: "A sample book description for testing purposes.",
+      longDescription: `This is a sample book description. In a real application, this would be fetched from the database. The description would provide detailed information about the book's content, themes, and author's style.\n\nSample text continues here to show how multiple paragraphs would be displayed. This helps users understand what the book is about before making a purchase decision.`,
+      stock: 15,
+      isBestseller: true,
+      isNewRelease: false,
+    };
+  };
+
+  const getSampleRelatedBooks = () => {
+    return [
+      {
+        id: 2,
+        title: "Sample Related Book 1",
+        author: "Author One",
+        price: 14.99,
+        rating: 4.8,
+        image:
+          "https://via.placeholder.com/150x200/2ecc71/ffffff?text=Related1",
+        category: "Fiction",
+      },
+      {
+        id: 3,
+        title: "Sample Related Book 2",
+        author: "Author Two",
+        price: 10.99,
+        rating: 4.7,
+        image:
+          "https://via.placeholder.com/150x200/9b59b6/ffffff?text=Related2",
+        category: "Fiction",
+      },
+      {
+        id: 4,
+        title: "Sample Related Book 3",
+        author: "Author Three",
+        price: 9.99,
+        rating: 4.6,
+        image:
+          "https://via.placeholder.com/150x200/e74c3c/ffffff?text=Related3",
+        category: "Fiction",
+      },
+      {
+        id: 5,
+        title: "Sample Related Book 4",
+        author: "Author Four",
+        price: 11.99,
+        rating: 4.4,
+        image:
+          "https://via.placeholder.com/150x200/f39c12/ffffff?text=Related4",
+        category: "Fiction",
+      },
+    ];
+  };
 
   // Quantity handlers
   const increaseQuantity = () => {
-    if (quantity < bookData.stock) {
+    if (bookData && quantity < bookData.stock) {
       setQuantity(quantity + 1);
     }
   };
@@ -88,39 +188,102 @@ const BookDetails = () => {
 
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value) || 1;
-    if (value >= 1 && value <= bookData.stock) {
+    if (bookData && value >= 1 && value <= bookData.stock) {
       setQuantity(value);
     }
   };
 
-  // Add to cart handler
-  const handleAddToCart = () => {
-    alert(`Added ${quantity} copy(ies) of "${bookData.title}" to cart`);
-    // In real app: dispatch to cart context/API
+  // Add to cart handler - REAL IMPLEMENTATION
+  const handleAddToCart = async () => {
+    if (!user) {
+      if (
+        window.confirm(
+          "You need to login to add items to cart. Go to login page?",
+        )
+      ) {
+        navigate("/login", { state: { from: `/book/${id}` } });
+      }
+      return;
+    }
+
+    if (!bookData || bookData.stock === 0) {
+      alert("This book is out of stock!");
+      return;
+    }
+
+    setIsAddingToCart(true);
+
+    try {
+      await addToCart(bookData.id, quantity);
+      alert(`Added ${quantity} copy(ies) of "${bookData.title}" to cart!`);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert(`Failed to add to cart: ${error.message}`);
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   // Add to wishlist handler
   const handleAddToWishlist = () => {
-    setIsInWishlist(!isInWishlist);
-    alert(
-      isInWishlist
-        ? `Removed "${bookData.title}" from wishlist`
-        : `Added "${bookData.title}" to wishlist`,
-    );
+    const storedWishlist = localStorage.getItem("wishlist") || "[]";
+    const wishlist = JSON.parse(storedWishlist);
+
+    if (isInWishlist) {
+      const updatedWishlist = wishlist.filter(
+        (bookId) => bookId !== parseInt(id),
+      );
+      localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+      setIsInWishlist(false);
+      alert(`Removed "${bookData?.title}" from wishlist`);
+    } else {
+      wishlist.push(parseInt(id));
+      localStorage.setItem("wishlist", JSON.stringify(wishlist));
+      setIsInWishlist(true);
+      alert(`Added "${bookData?.title}" to wishlist`);
+    }
   };
 
   // Share book
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: bookData.title,
-        text: `Check out "${bookData.title}" by ${bookData.author}`,
+        title: bookData?.title || "Book",
+        text: `Check out "${bookData?.title}" by ${bookData?.author}`,
         url: window.location.href,
       });
     } else {
-      alert("Share link copied to clipboard!");
-      // Fallback: Copy to clipboard
       navigator.clipboard.writeText(window.location.href);
+      alert("Share link copied to clipboard!");
+    }
+  };
+
+  // Buy Now handler
+  const handleBuyNow = async () => {
+    if (!user) {
+      if (
+        window.confirm("You need to login to purchase items. Go to login page?")
+      ) {
+        navigate("/login", { state: { from: `/book/${id}` } });
+      }
+      return;
+    }
+
+    if (!bookData || bookData.stock === 0) {
+      alert("This book is out of stock!");
+      return;
+    }
+
+    setIsAddingToCart(true);
+
+    try {
+      await addToCart(bookData.id, quantity);
+      navigate("/cart");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert(`Failed to add to cart: ${error.message}`);
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
@@ -137,6 +300,35 @@ const BookDetails = () => {
       </>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="book-details-page">
+        <div className="container">
+          <div className="loading-book">
+            <div className="spinner-large"></div>
+            <p>Loading book details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bookData) {
+    return (
+      <div className="book-details-page">
+        <div className="container">
+          <div className="book-not-found">
+            <h2>Book Not Found</h2>
+            <p>The book you're looking for doesn't exist.</p>
+            <Link to="/categories" className="btn btn-primary">
+              Browse Books
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="book-details-page">
@@ -177,6 +369,7 @@ const BookDetails = () => {
               <button
                 className={`action-btn wishlist-btn ${isInWishlist ? "active" : ""}`}
                 onClick={handleAddToWishlist}
+                disabled={!user}
               >
                 {isInWishlist ? "❤️ In Wishlist" : "🤍 Add to Wishlist"}
               </button>
@@ -200,9 +393,12 @@ const BookDetails = () => {
                 <span className="review-count">
                   ({bookData.reviewCount} reviews)
                 </span>
-                <Link to="#reviews" className="view-reviews">
+                <button
+                  className="view-reviews"
+                  onClick={() => setActiveTab("reviews")}
+                >
                   View all reviews
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -233,6 +429,14 @@ const BookDetails = () => {
                 <span className="metadata-label">ISBN:</span>
                 <span className="metadata-value">{bookData.isbn}</span>
               </div>
+              {bookData.createdAt && (
+                <div className="metadata-item">
+                  <span className="metadata-label">Added to Store:</span>
+                  <span className="metadata-value">
+                    {new Date(bookData.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Price Section */}
@@ -243,18 +447,20 @@ const BookDetails = () => {
                   ${bookData.originalPrice.toFixed(2)}
                 </div>
               )}
-              <div className="discount-badge">
-                Save{" "}
-                {Math.round(
-                  (1 - bookData.price / bookData.originalPrice) * 100,
-                )}
-                %
-              </div>
+              {bookData.originalPrice && (
+                <div className="discount-badge">
+                  Save{" "}
+                  {Math.round(
+                    (1 - bookData.price / bookData.originalPrice) * 100,
+                  )}
+                  %
+                </div>
+              )}
             </div>
 
             {/* Short Description */}
             <div className="book-short-description">
-              <p>{bookData.shortDescription}</p>
+              <p>{bookData.description || bookData.shortDescription}</p>
             </div>
 
             {/* Stock Status */}
@@ -270,6 +476,7 @@ const BookDetails = () => {
               ) : (
                 <span className="out-of-stock">🔴 Out of Stock</span>
               )}
+              {!user && <span className="login-note">(Login to purchase)</span>}
             </div>
 
             {/* Quantity and Add to Cart */}
@@ -280,7 +487,7 @@ const BookDetails = () => {
                   <button
                     className="quantity-btn minus"
                     onClick={decreaseQuantity}
-                    disabled={quantity <= 1}
+                    disabled={quantity <= 1 || bookData.stock === 0}
                   >
                     −
                   </button>
@@ -292,11 +499,14 @@ const BookDetails = () => {
                     value={quantity}
                     onChange={handleQuantityChange}
                     className="quantity-input"
+                    disabled={bookData.stock === 0}
                   />
                   <button
                     className="quantity-btn plus"
                     onClick={increaseQuantity}
-                    disabled={quantity >= bookData.stock}
+                    disabled={
+                      quantity >= bookData.stock || bookData.stock === 0
+                    }
                   >
                     +
                   </button>
@@ -307,17 +517,21 @@ const BookDetails = () => {
                 <button
                   className="btn add-to-cart-btn"
                   onClick={handleAddToCart}
-                  disabled={bookData.stock === 0}
+                  disabled={bookData.stock === 0 || isAddingToCart || !user}
                 >
-                  🛒 Add to Cart (${(bookData.price * quantity).toFixed(2)})
+                  {isAddingToCart ? (
+                    <>
+                      <span className="spinner-small"></span>
+                      Adding...
+                    </>
+                  ) : (
+                    `🛒 Add to Cart ($${(bookData.price * quantity).toFixed(2)})`
+                  )}
                 </button>
                 <button
                   className="btn buy-now-btn"
-                  onClick={() => {
-                    handleAddToCart();
-                    navigate("/cart");
-                  }}
-                  disabled={bookData.stock === 0}
+                  onClick={handleBuyNow}
+                  disabled={bookData.stock === 0 || isAddingToCart || !user}
                 >
                   ⚡ Buy Now
                 </button>
@@ -367,11 +581,13 @@ const BookDetails = () => {
               <div className="tab-panel description-panel">
                 <h3>About This Book</h3>
                 <div className="description-content">
-                  {bookData.longDescription
-                    .split("\n\n")
-                    .map((paragraph, index) => (
-                      <p key={index}>{paragraph}</p>
-                    ))}
+                  {bookData.longDescription ? (
+                    bookData.longDescription
+                      .split("\n\n")
+                      .map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                  ) : (
+                    <p>{bookData.description}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -406,20 +622,16 @@ const BookDetails = () => {
                       <td>{bookData.isbn}</td>
                     </tr>
                     <tr>
-                      <th>Language</th>
-                      <td>English</td>
+                      <th>Category</th>
+                      <td>{bookData.category}</td>
                     </tr>
                     <tr>
-                      <th>Format</th>
-                      <td>Paperback</td>
+                      <th>Stock Available</th>
+                      <td>{bookData.stock} units</td>
                     </tr>
                     <tr>
-                      <th>Dimensions</th>
-                      <td>5.5 x 8.5 inches</td>
-                    </tr>
-                    <tr>
-                      <th>Weight</th>
-                      <td>12 oz</td>
+                      <th>Price</th>
+                      <td>${bookData.price.toFixed(2)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -487,11 +699,10 @@ const BookDetails = () => {
                       <div className="review-rating">★★★★★</div>
                       <div className="review-date">January 15, 2024</div>
                     </div>
-                    <div className="review-title">A timeless masterpiece</div>
+                    <div className="review-title">Excellent read!</div>
                     <div className="review-content">
-                      This book captures the essence of the Jazz Age like no
-                      other. Fitzgerald's prose is both beautiful and haunting.
-                      A must-read for everyone.
+                      This book is a wonderful addition to our collection.
+                      Highly recommended for all readers!
                     </div>
                   </div>
                 </div>

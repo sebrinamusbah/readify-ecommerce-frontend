@@ -25,8 +25,183 @@ const initializeMockDatabase = () => {
           createdAt: new Date().toISOString(),
         },
       ],
-      categories: [],
-      books: [],
+      categories: [
+        {
+          id: 1,
+          name: "Fiction",
+          description: "Imaginative stories and novels",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 2,
+          name: "Science",
+          description: "Scientific books and discoveries",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 3,
+          name: "Technology",
+          description: "Computers, programming, and tech",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 4,
+          name: "Biography",
+          description: "Life stories of real people",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 5,
+          name: "Business",
+          description: "Entrepreneurship and management",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+      ],
+      books: [
+        {
+          id: 1,
+          title: "The Great Gatsby",
+          author: "F. Scott Fitzgerald",
+          description:
+            "A classic novel of the Jazz Age, exploring themes of idealism and excess.",
+          price: 12.99,
+          categoryId: 1,
+          stock: 25,
+          imageUrl:
+            "https://via.placeholder.com/400x500/3498db/ffffff?text=The+Great+Gatsby",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 2,
+          title: "A Brief History of Time",
+          author: "Stephen Hawking",
+          description:
+            "Explores fundamental questions about the universe and our existence.",
+          price: 18.99,
+          categoryId: 2,
+          stock: 15,
+          imageUrl:
+            "https://via.placeholder.com/400x500/2ecc71/ffffff?text=History+of+Time",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 3,
+          title: "Clean Code",
+          author: "Robert C. Martin",
+          description:
+            "A handbook of agile software craftsmanship with practical advice.",
+          price: 34.99,
+          categoryId: 3,
+          stock: 30,
+          imageUrl:
+            "https://via.placeholder.com/400x500/9b59b6/ffffff?text=Clean+Code",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 4,
+          title: "Steve Jobs",
+          author: "Walter Isaacson",
+          description:
+            "The exclusive biography of Apple co-founder Steve Jobs.",
+          price: 16.99,
+          categoryId: 4,
+          stock: 20,
+          imageUrl:
+            "https://via.placeholder.com/400x500/e74c3c/ffffff?text=Steve+Jobs",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 5,
+          title: "The Lean Startup",
+          author: "Eric Ries",
+          description:
+            "How today's entrepreneurs use continuous innovation to create successful businesses.",
+          price: 19.99,
+          categoryId: 5,
+          stock: 35,
+          imageUrl:
+            "https://via.placeholder.com/400x500/f39c12/ffffff?text=Lean+Startup",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 6,
+          title: "1984",
+          author: "George Orwell",
+          description:
+            "A dystopian social science fiction novel about totalitarian regime.",
+          price: 10.99,
+          categoryId: 1,
+          stock: 40,
+          imageUrl:
+            "https://via.placeholder.com/400x500/1abc9c/ffffff?text=1984",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 7,
+          title: "Cosmos",
+          author: "Carl Sagan",
+          description:
+            "One of the best-selling science books of all time about cosmic evolution.",
+          price: 15.99,
+          categoryId: 2,
+          stock: 18,
+          imageUrl:
+            "https://via.placeholder.com/400x500/3498db/ffffff?text=Cosmos",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 8,
+          title: "The Pragmatic Programmer",
+          author: "David Thomas & Andrew Hunt",
+          description: "Your journey to mastery in software development.",
+          price: 29.99,
+          categoryId: 3,
+          stock: 22,
+          imageUrl:
+            "https://via.placeholder.com/400x500/2ecc71/ffffff?text=Pragmatic+Programmer",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 9,
+          title: "Elon Musk",
+          author: "Ashlee Vance",
+          description:
+            "The thrilling story of Silicon Valley's most daring entrepreneur.",
+          price: 14.99,
+          categoryId: 4,
+          stock: 28,
+          imageUrl:
+            "https://via.placeholder.com/400x500/9b59b6/ffffff?text=Elon+Musk",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+        {
+          id: 10,
+          title: "Zero to One",
+          author: "Peter Thiel",
+          description: "Notes on startups, or how to build the future.",
+          price: 17.99,
+          categoryId: 5,
+          stock: 32,
+          imageUrl:
+            "https://via.placeholder.com/400x500/e74c3c/ffffff?text=Zero+to+One",
+          createdAt: new Date().toISOString(),
+          createdBy: 1,
+        },
+      ],
       cartItems: [],
       orders: [],
       orderItems: [],
@@ -71,7 +246,7 @@ export const AuthProvider = ({ children }) => {
     // Check if user is logged in from localStorage on initial load
     checkUser();
 
-    // Listen for storage events (login/logout from other tabs/windows)
+    // Listen for storage events
     const handleStorageChange = (e) => {
       if (e.key === "currentUser") {
         checkUser();
@@ -104,7 +279,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // REGISTER FUNCTION: User registers → Users table
+  // REGISTER FUNCTION
   const register = async (userData) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -191,7 +366,6 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("currentUser");
-    // Dispatch custom event for same tab
     window.dispatchEvent(new Event("user-auth-change"));
   };
 
@@ -199,7 +373,7 @@ export const AuthProvider = ({ children }) => {
     return user?.role === "admin";
   };
 
-  // ADMIN FUNCTIONS: Admin adds categories → Categories table
+  // ADMIN FUNCTIONS
   const addCategory = (categoryData) => {
     const newCategory = {
       id: Date.now(),
@@ -217,7 +391,6 @@ export const AuthProvider = ({ children }) => {
     return newCategory;
   };
 
-  // Admin adds books → Books table (with categoryId)
   const addBook = (bookData) => {
     // Check if category exists
     const categoryExists = mockDB.categories.find(
@@ -243,42 +416,83 @@ export const AuthProvider = ({ children }) => {
     return newBook;
   };
 
-  // USER FUNCTIONS: User adds to cart → CartItems table
+  // FIXED: ADD TO CART FUNCTION - SIMPLIFIED VERSION
   const addToCart = (bookId, quantity = 1) => {
-    const existingItem = mockDB.cartItems.find(
-      (item) => item.userId === user?.id && item.bookId === bookId,
+    if (!user) {
+      throw new Error("User must be logged in to add to cart");
+    }
+
+    // Convert to number
+    const numericBookId = parseInt(bookId);
+
+    // Find book
+    const book = mockDB.books.find((b) => b.id === numericBookId);
+
+    if (!book) {
+      // Try string comparison if numeric fails
+      const bookStr = mockDB.books.find(
+        (b) => b.id.toString() === bookId.toString(),
+      );
+      if (!bookStr) {
+        throw new Error(`Book not found. ID: ${bookId}`);
+      }
+    }
+
+    const targetBook =
+      book || mockDB.books.find((b) => b.id.toString() === bookId.toString());
+
+    if (!targetBook) {
+      throw new Error(`Book with ID ${bookId} not found in database.`);
+    }
+
+    // Check stock
+    if (targetBook.stock < quantity) {
+      throw new Error(`Only ${targetBook.stock} items in stock`);
+    }
+
+    // Find existing cart item
+    const existingItemIndex = mockDB.cartItems.findIndex(
+      (item) => item.userId === user.id && item.bookId === targetBook.id,
     );
 
     let updatedCartItems;
-    if (existingItem) {
-      updatedCartItems = mockDB.cartItems.map((item) =>
-        item.id === existingItem.id
-          ? { ...item, quantity: item.quantity + quantity }
-          : item,
-      );
+
+    if (existingItemIndex !== -1) {
+      // Update existing item
+      updatedCartItems = [...mockDB.cartItems];
+      updatedCartItems[existingItemIndex] = {
+        ...updatedCartItems[existingItemIndex],
+        quantity: updatedCartItems[existingItemIndex].quantity + quantity,
+        updatedAt: new Date().toISOString(),
+      };
     } else {
+      // Add new item
       const newCartItem = {
         id: Date.now(),
-        userId: user?.id,
-        bookId,
+        userId: user.id,
+        bookId: targetBook.id,
         quantity,
         addedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       updatedCartItems = [...mockDB.cartItems, newCartItem];
     }
 
+    // Update database
     const updatedDB = {
       ...mockDB,
       cartItems: updatedCartItems,
     };
-    setMockDB(updatedDB);
 
-    return mockDB.cartItems.find(
-      (item) => item.userId === user?.id && item.bookId === bookId,
+    setMockDB(updatedDB);
+    localStorage.setItem("bookstoreDB", JSON.stringify(updatedDB));
+
+    return updatedCartItems.find(
+      (item) => item.userId === user.id && item.bookId === targetBook.id,
     );
   };
 
-  // User checks out → Orders table + OrderItems table
+  // CHECKOUT FUNCTION
   const checkout = () => {
     if (!user) throw new Error("User must be logged in to checkout");
 
@@ -327,6 +541,7 @@ export const AuthProvider = ({ children }) => {
     window.dispatchEvent(new Event("user-auth-change"));
   };
 
+  // HELPER FUNCTIONS FOR PAGES
   const value = {
     user,
     loading,
@@ -335,18 +550,55 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAdmin,
     updateUser,
-    // Mock database functions
+
+    // Mock database
     mockDB,
+
+    // Admin functions
     addCategory,
     addBook,
+
+    // User functions
     addToCart,
     checkout,
-    // Helper getters
-    getUserCart: () =>
-      mockDB.cartItems.filter((item) => item.userId === user?.id),
+
+    // Helper getters - THESE ARE CORRECT FOR YOUR PAGES
+    getUserCart: () => {
+      if (!user) return [];
+      return mockDB.cartItems
+        .filter((item) => item.userId === user.id)
+        .map((cartItem) => {
+          const book = mockDB.books.find((b) => b.id === cartItem.bookId);
+          const category = mockDB.categories.find(
+            (c) => c.id === book?.categoryId,
+          );
+
+          if (!book) return null;
+
+          return {
+            ...cartItem,
+            bookDetails: {
+              id: book.id,
+              title: book.title,
+              author: book.author,
+              price: book.price,
+              image:
+                book.imageUrl ||
+                `https://via.placeholder.com/150x200/3498db/ffffff?text=${book.title.substring(0, 5)}`,
+              category: category?.name || "Uncategorized",
+              stock: book.stock,
+              description: book.description,
+            },
+          };
+        })
+        .filter((item) => item !== null);
+    },
+
     getUserOrders: () =>
       mockDB.orders.filter((order) => order.userId === user?.id),
+
     getCategories: () => mockDB.categories,
+
     getBooks: () => mockDB.books,
   };
 

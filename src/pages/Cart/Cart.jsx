@@ -14,41 +14,34 @@ const Cart = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   // Load cart items from mock database
+  // In Cart.jsx, update the useEffect that loads cart items:
+
   useEffect(() => {
     if (user) {
       const userCart = getUserCart();
 
-      // Enrich cart items with book details
-      const enrichedCartItems = userCart
-        .map((cartItem) => {
-          const book = getBooks().find((b) => b.id === cartItem.bookId);
-          const category = getCategories().find(
-            (c) => c.id === book?.categoryId,
-          );
+      // Direct mapping - no need to enrich again
+      const cartItemsWithDetails = userCart.map((cartItem) => {
+        // cartItem already has bookDetails from getUserCart
+        return {
+          id: cartItem.id,
+          bookId: cartItem.bookId,
+          title: cartItem.bookDetails.title,
+          author: cartItem.bookDetails.author,
+          price: cartItem.bookDetails.price,
+          originalPrice: cartItem.bookDetails.price * 1.3, // Simulate discount
+          quantity: cartItem.quantity,
+          image: cartItem.bookDetails.image,
+          category: cartItem.bookDetails.category,
+          stock: cartItem.bookDetails.stock,
+        };
+      });
 
-          if (!book) return null;
-
-          return {
-            id: cartItem.id,
-            bookId: book.id,
-            title: book.title,
-            author: book.author,
-            price: book.price,
-            originalPrice: book.price * 1.3, // Simulate discount
-            quantity: cartItem.quantity,
-            image:
-              book.imageUrl ||
-              `https://via.placeholder.com/100x130/3498db/ffffff?text=${book.title.substring(0, 5)}`,
-            category: category?.name || "Uncategorized",
-            stock: book.stock,
-            description: book.description,
-          };
-        })
-        .filter((item) => item !== null);
-
-      setCartItems(enrichedCartItems);
+      setCartItems(cartItemsWithDetails);
+    } else {
+      setCartItems([]);
     }
-  }, [user, mockDB, getUserCart, getBooks, getCategories]);
+  }, [user, mockDB, getUserCart]); // Add getUserCart to dependencies
 
   // Calculate totals
   const subtotal = cartItems.reduce(
