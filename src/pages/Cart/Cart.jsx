@@ -45,7 +45,7 @@ const Cart = () => {
   // Calculate totals
   const subtotal = cartItems.reduce(
     (total, item) => total + item.price * item.quantity,
-    0
+    0,
   );
   const tax = subtotal * 0.08; // 8% tax
   const shipping = subtotal > 30 ? 0 : 5.99; // Free shipping over $30
@@ -59,7 +59,7 @@ const Cart = () => {
           return { ...item, quantity: item.quantity + 1 };
         }
         return item;
-      })
+      }),
     );
   };
 
@@ -70,7 +70,7 @@ const Cart = () => {
           return { ...item, quantity: item.quantity - 1 };
         }
         return item;
-      })
+      }),
     );
   };
 
@@ -82,7 +82,7 @@ const Cart = () => {
           return { ...item, quantity: Math.min(quantity, item.stock) };
         }
         return item;
-      })
+      }),
     );
   };
 
@@ -90,7 +90,7 @@ const Cart = () => {
   const removeItem = (id) => {
     if (
       window.confirm(
-        "Are you sure you want to remove this item from your cart?"
+        "Are you sure you want to remove this item from your cart?",
       )
     ) {
       setCartItems(cartItems.filter((item) => item.id !== id));
@@ -263,7 +263,7 @@ const Cart = () => {
                             onChange={(e) =>
                               updateQuantity(
                                 item.id,
-                                parseInt(e.target.value) || 1
+                                parseInt(e.target.value) || 1,
                               )
                             }
                             className="quantity-input"
@@ -313,9 +313,7 @@ const Cart = () => {
                   <div className="summary-row">
                     <span className="summary-label">Shipping:</span>
                     <span
-                      className={`summary-value ${
-                        shipping === 0 ? "free-shipping" : ""
-                      }`}
+                      className={`summary-value ${shipping === 0 ? "free-shipping" : ""}`}
                     >
                       {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
                     </span>

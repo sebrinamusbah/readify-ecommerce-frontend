@@ -105,7 +105,7 @@ const BookDetails = () => {
     alert(
       isInWishlist
         ? `Removed "${bookData.title}" from wishlist`
-        : `Added "${bookData.title}" to wishlist`
+        : `Added "${bookData.title}" to wishlist`,
     );
   };
 
@@ -175,9 +175,7 @@ const BookDetails = () => {
             {/* Share and Wishlist Buttons */}
             <div className="book-actions">
               <button
-                className={`action-btn wishlist-btn ${
-                  isInWishlist ? "active" : ""
-                }`}
+                className={`action-btn wishlist-btn ${isInWishlist ? "active" : ""}`}
                 onClick={handleAddToWishlist}
               >
                 {isInWishlist ? "❤️ In Wishlist" : "🤍 Add to Wishlist"}
@@ -248,7 +246,7 @@ const BookDetails = () => {
               <div className="discount-badge">
                 Save{" "}
                 {Math.round(
-                  (1 - bookData.price / bookData.originalPrice) * 100
+                  (1 - bookData.price / bookData.originalPrice) * 100,
                 )}
                 %
               </div>
@@ -345,9 +343,7 @@ const BookDetails = () => {
         <div className="book-tabs-section">
           <div className="tabs-header">
             <button
-              className={`tab-btn ${
-                activeTab === "description" ? "active" : ""
-              }`}
+              className={`tab-btn ${activeTab === "description" ? "active" : ""}`}
               onClick={() => setActiveTab("description")}
             >
               Description

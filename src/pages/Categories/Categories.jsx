@@ -189,7 +189,7 @@ const Categories = () => {
         setSelectedCategories([categorySlug]);
       } else if (selectedCategories.includes(categorySlug)) {
         setSelectedCategories(
-          selectedCategories.filter((cat) => cat !== categorySlug)
+          selectedCategories.filter((cat) => cat !== categorySlug),
         );
       } else {
         setSelectedCategories([...selectedCategories, categorySlug]);
@@ -239,9 +239,7 @@ const Categories = () => {
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`category-btn ${
-                      selectedCategories.includes(category.slug) ? "active" : ""
-                    }`}
+                    className={`category-btn ${selectedCategories.includes(category.slug) ? "active" : ""}`}
                     onClick={() => handleCategoryClick(category.slug)}
                   >
                     <span className="category-name">{category.name}</span>
@@ -281,9 +279,7 @@ const Categories = () => {
                 {[4, 3, 2, 1, 0].map((rating) => (
                   <button
                     key={rating}
-                    className={`rating-btn ${
-                      minRating === rating ? "active" : ""
-                    }`}
+                    className={`rating-btn ${minRating === rating ? "active" : ""}`}
                     onClick={() => setMinRating(rating)}
                   >
                     {rating === 0 ? "Any Rating" : `${rating}+ Stars`}

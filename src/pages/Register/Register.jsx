@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext"; // Import useAuth
 import "./Register.css";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register } = useAuth(); // Get register function from AuthContext
 
   // Form state
   const [formData, setFormData] = useState({
@@ -19,6 +21,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [registerError, setRegisterError] = useState(""); // For registration errors
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -33,6 +36,10 @@ const Register = () => {
         ...errors,
         [name]: "",
       });
+    }
+    // Clear register error when user types
+    if (registerError) {
+      setRegisterError("");
     }
   };
 
@@ -105,9 +112,10 @@ const Register = () => {
     return newErrors;
   };
 
-  // Handle form submission
+  // Handle form submission - NOW USING AUTHCONTEXT REGISTER
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setRegisterError(""); // Clear previous errors
 
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -117,31 +125,35 @@ const Register = () => {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Registration attempt:", {
-        ...formData,
-        password: "***", // Don't log actual password
+    try {
+      // Use the register function from AuthContext
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
       });
 
-      // Simulate successful registration
+      // Success - show welcome message
       alert(
-        `Welcome ${formData.firstName}! Your account has been created successfully.`
-      );
-
-      // Store registration data (in real app, use context/Redux)
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userEmail", formData.email);
-      localStorage.setItem(
-        "userName",
-        `${formData.firstName} ${formData.lastName}`
+        `Welcome ${formData.firstName}! Your account has been created successfully. You are now logged in.`,
       );
 
       // Redirect to home page
       navigate("/");
+    } catch (error) {
+      // Handle registration errors
+      console.error("Registration error:", error);
+      setRegisterError(
+        error.message || "Registration failed. Please try again.",
+      );
 
+      // Optionally scroll to error
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   // Get password strength color
@@ -225,6 +237,14 @@ const Register = () => {
               </p>
             </div>
 
+            {/* Display registration error if any */}
+            {registerError && (
+              <div className="register-error-message">
+                <span className="error-icon">⚠️</span>
+                {registerError}
+              </div>
+            )}
+
             {/* Registration Form */}
             <form className="register-form" onSubmit={handleSubmit} noValidate>
               {/* Name Fields - Two Columns */}
@@ -298,6 +318,7 @@ const Register = () => {
                     type="button"
                     className="show-password-btn"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? "🙈 Hide" : "👁️ Show"}
                   </button>
@@ -322,7 +343,7 @@ const Register = () => {
                         style={{
                           width: `${passwordStrength.strength}%`,
                           backgroundColor: getPasswordStrengthColor(
-                            passwordStrength.strength
+                            passwordStrength.strength,
                           ),
                         }}
                       ></div>
@@ -332,56 +353,46 @@ const Register = () => {
                       <span
                         style={{
                           color: getPasswordStrengthColor(
-                            passwordStrength.strength
+                            passwordStrength.strength,
                           ),
                         }}
                       >
                         {passwordStrength.strength < 40
                           ? " Weak"
                           : passwordStrength.strength < 70
-                          ? " Fair"
-                          : " Strong"}
+                            ? " Fair"
+                            : " Strong"}
                       </span>
                     </div>
 
                     {/* Password Requirements */}
                     <div className="password-requirements">
                       <div
-                        className={`requirement ${
-                          passwordStrength.requirements.length ? "met" : ""
-                        }`}
+                        className={`requirement ${passwordStrength.requirements.length ? "met" : ""}`}
                       >
                         {passwordStrength.requirements.length ? "✓" : "○"} At
                         least 8 characters
                       </div>
                       <div
-                        className={`requirement ${
-                          passwordStrength.requirements.uppercase ? "met" : ""
-                        }`}
+                        className={`requirement ${passwordStrength.requirements.uppercase ? "met" : ""}`}
                       >
                         {passwordStrength.requirements.uppercase ? "✓" : "○"}{" "}
                         One uppercase letter
                       </div>
                       <div
-                        className={`requirement ${
-                          passwordStrength.requirements.lowercase ? "met" : ""
-                        }`}
+                        className={`requirement ${passwordStrength.requirements.lowercase ? "met" : ""}`}
                       >
                         {passwordStrength.requirements.lowercase ? "✓" : "○"}{" "}
                         One lowercase letter
                       </div>
                       <div
-                        className={`requirement ${
-                          passwordStrength.requirements.number ? "met" : ""
-                        }`}
+                        className={`requirement ${passwordStrength.requirements.number ? "met" : ""}`}
                       >
                         {passwordStrength.requirements.number ? "✓" : "○"} One
                         number
                       </div>
                       <div
-                        className={`requirement ${
-                          passwordStrength.requirements.special ? "met" : ""
-                        }`}
+                        className={`requirement ${passwordStrength.requirements.special ? "met" : ""}`}
                       >
                         {passwordStrength.requirements.special ? "✓" : "○"} One
                         special character
@@ -405,6 +416,7 @@ const Register = () => {
                     type="button"
                     className="show-password-btn"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={isLoading}
                   >
                     {showConfirmPassword ? "🙈 Hide" : "👁️ Show"}
                   </button>
@@ -415,9 +427,7 @@ const Register = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`form-input ${
-                    errors.confirmPassword ? "error" : ""
-                  }`}
+                  className={`form-input ${errors.confirmPassword ? "error" : ""}`}
                   placeholder="Re-enter your password"
                   disabled={isLoading}
                 />

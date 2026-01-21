@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
+
+  // Use AuthContext - now includes more functions
+  const { login, isAdmin, user } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -17,6 +21,15 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Check for remembered email on component mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setFormData((prev) => ({ ...prev, email: rememberedEmail }));
+      setRememberMe(true);
+    }
+  }, []);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -31,6 +44,10 @@ const Login = () => {
         ...errors,
         [name]: "",
       });
+    }
+    // Clear general error
+    if (errors.general) {
+      setErrors({});
     }
   };
 
@@ -54,7 +71,6 @@ const Login = () => {
   };
 
   // Handle form submission
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -66,85 +82,64 @@ const Login = () => {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Login attempt:", formData);
-      console.log("Remember me:", rememberMe);
+    try {
+      // Use the AuthContext login function
+      const user = await login(formData.email, formData.password);
 
-      // Simulate API response with user data
-      let user;
-
-      // Check for admin credentials
-      if (
-        formData.email === "admin@bookstore.com" &&
-        formData.password === "admin123"
-      ) {
-        user = {
-          id: 1,
-          email: "admin@bookstore.com",
-          name: "Admin User",
-          role: "admin",
-          avatar: "👑",
-        };
-        alert(`Welcome Admin! You are now logged in.`);
-      }
-      // Check for normal user credentials
-      else if (
-        formData.email === "test@example.com" &&
-        formData.password === "password123"
-      ) {
-        user = {
-          id: 2,
-          email: "test@example.com",
-          name: "Test User",
-          role: "user",
-          avatar: "👤",
-        };
-        alert(`Welcome back! You are now logged in as ${formData.email}`);
-      }
-      // Simulate failed login
-      else {
-        setIsLoading(false);
-        setErrors({
-          general:
-            "Invalid email or password. Try: test@example.com / password123",
-        });
-        return;
-      }
-
-      // Store user data in localStorage and context
-      localStorage.setItem("user", JSON.stringify(user));
-
-      // Update the AuthContext (will be detected by the AuthProvider)
-      window.dispatchEvent(new Event("storage"));
-
-      // Redirect based on user role
-      if (user.role === "admin") {
-        navigate("/admin");
+      // Remember me functionality
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", formData.email);
       } else {
-        navigate(from, { replace: true });
+        localStorage.removeItem("rememberedEmail");
       }
 
+      // Success message with dynamic greeting
+      const greeting = isAdmin() ? "Admin" : user.name || "User";
+      alert(`Welcome back, ${greeting}! You are now logged in.`);
+
+      // Redirect based on user role and previous location
+      setTimeout(() => {
+        if (isAdmin()) {
+          navigate("/admin/dashboard", { replace: true });
+        } else if (from !== "/") {
+          navigate(from, { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
+      }, 500);
+    } catch (error) {
+      console.error("Login error:", error);
+      setErrors({
+        general:
+          error.message || "Invalid email or password. Please try again.",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   // Handle social login
   const handleSocialLogin = (provider) => {
-    alert(`Redirecting to ${provider} login...`);
+    alert(
+      `Simulating ${provider} login... This would redirect to OAuth in a real app.`,
+    );
     // In real app: Redirect to OAuth endpoint
     // window.location.href = `/api/auth/${provider}`;
   };
 
   // Handle forgot password
   const handleForgotPassword = () => {
-    const email = prompt(
-      "Please enter your email address to reset your password:"
-    );
-    if (email && /\S+@\S+\.\S+/.test(email)) {
-      alert(`Password reset instructions have been sent to ${email}`);
-    } else if (email) {
-      alert("Please enter a valid email address");
+    if (!formData.email) {
+      const email = prompt(
+        "Please enter your email address to reset your password:",
+      );
+      if (email && /\S+@\S+\.\S+/.test(email)) {
+        alert(`Password reset instructions have been sent to ${email}`);
+      } else if (email) {
+        alert("Please enter a valid email address");
+      }
+    } else {
+      alert(`Password reset instructions have been sent to ${formData.email}`);
     }
   };
 
@@ -187,13 +182,18 @@ const Login = () => {
             </div>
 
             <div className="test-account">
-              <h4>Test Account:</h4>
-              <p>
-                <strong>Email:</strong> test@example.com
-              </p>
-              <p>
-                <strong>Password:</strong> password123
-              </p>
+              <h4>Test Accounts:</h4>
+              <div className="test-account-list">
+                <div className="test-account-item">
+                  <strong>Admin:</strong> admin@bookstore.com / admin123
+                </div>
+                <div className="test-account-item">
+                  <strong>User:</strong> test@example.com / password123
+                </div>
+                <div className="test-account-note">
+                  <em>Or register a new account</em>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -213,6 +213,8 @@ const Login = () => {
               <button
                 className="social-btn google-btn"
                 onClick={() => handleSocialLogin("Google")}
+                type="button"
+                disabled={isLoading}
               >
                 <span className="social-icon">🔍</span>
                 Continue with Google
@@ -221,6 +223,8 @@ const Login = () => {
               <button
                 className="social-btn facebook-btn"
                 onClick={() => handleSocialLogin("Facebook")}
+                type="button"
+                disabled={isLoading}
               >
                 <span className="social-icon">👥</span>
                 Continue with Facebook
@@ -233,6 +237,14 @@ const Login = () => {
 
             {/* Login Form */}
             <form className="login-form" onSubmit={handleSubmit} noValidate>
+              {/* Show general error if exists */}
+              {errors.general && (
+                <div className="general-error">
+                  <span className="error-icon">⚠️</span>
+                  {errors.general}
+                </div>
+              )}
+
               {/* Email Field */}
               <div className="form-group">
                 <label htmlFor="email" className="form-label">
@@ -247,6 +259,7 @@ const Login = () => {
                   className={`form-input ${errors.email ? "error" : ""}`}
                   placeholder="Enter your email"
                   disabled={isLoading}
+                  autoComplete="email"
                 />
                 {errors.email && (
                   <div className="error-message">{errors.email}</div>
@@ -263,6 +276,7 @@ const Login = () => {
                     type="button"
                     className="show-password-btn"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? "🙈 Hide" : "👁️ Show"}
                   </button>
@@ -277,6 +291,7 @@ const Login = () => {
                     className={`form-input ${errors.password ? "error" : ""}`}
                     placeholder="Enter your password"
                     disabled={isLoading}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
@@ -292,7 +307,7 @@ const Login = () => {
                 )}
               </div>
 
-              {/* Remember Me & Forgot Password */}
+              {/* Remember Me */}
               <div className="form-options">
                 <label className="checkbox-label">
                   <input

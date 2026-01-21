@@ -1,6 +1,7 @@
 // In src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
 import Home from "./pages/Home/Home";
@@ -46,85 +47,85 @@ const SettingsPlaceholder = () => (
 
 function App() {
   return (
-    <Router>
-      {" "}
-      {/* ✅ Changed from AuthProvider to Router */}
-      <div className="app-container">
-        {/* Only show main navbar on non-admin routes */}
-        <Routes>
-          <Route path="/admin/*" element={null} />
-          <Route path="*" element={<Navbar />} />
-        </Routes>
-
-        <main className="main-content">
+    <AuthProvider>
+      <Router>
+        <div className="app-container">
+          {/* Only show main navbar on non-admin routes */}
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/book/:id" element={<BookDetails />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-
-            {/* Admin Routes - Protected */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/books"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <ManageBooksPlaceholder />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/orders"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <OrdersPlaceholder />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <UsersPlaceholder />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/reports"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <ReportsPlaceholder />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/settings"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <SettingsPlaceholder />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/admin/*" element={null} />
+            <Route path="*" element={<Navbar />} />
           </Routes>
-        </main>
 
-        {/* Only show footer on non-admin routes */}
-        <Routes>
-          <Route path="/admin/*" element={null} />
-          <Route path="*" element={<Footer />} />
-        </Routes>
-      </div>
-    </Router>
+          <main className="main-content">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/categories" element={<Categories />} />
+              <Route path="/book/:id" element={<BookDetails />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+
+              {/* Admin Routes - Protected */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/books"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <ManageBooksPlaceholder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <OrdersPlaceholder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <UsersPlaceholder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <ReportsPlaceholder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/settings"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <SettingsPlaceholder />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </main>
+
+          {/* Only show footer on non-admin routes */}
+          <Routes>
+            <Route path="/admin/*" element={null} />
+            <Route path="*" element={<Footer />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 
